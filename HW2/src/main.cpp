@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <sstream>
+#include <unordered_map>
 // #include <utility>
 using namespace std;
 
@@ -17,6 +18,16 @@ int NumTechs;
 int NumLibCells;
 
 die Die;
+
+// conversion table are used to prevent mismapping of: Libcell, Cell, and Net
+// R is the real id in name(eg. MC3, C8, N5)
+// V is the virtual id = the position of node in array(TechA, TechB, cellArray, netArray)
+unordered_map<int,int>  libRtoV;
+unordered_map<int,int>  libVtoR;
+unordered_map<int,int>  cellRtoV;
+unordered_map<int,int>  cellVtoR;
+unordered_map<int,int>  netRtoV;
+unordered_map<int,int>  netVtoR;
 
 pair<string, string> eatArg(int argc, char *argv[])
 {
@@ -59,17 +70,7 @@ void check(){
     }
 }
 
-void parser(string testcasePath)
-{
-    in_file.open(testcasePath);
-    // ifstream in_file(testcasePath);
-
-    if (in_file.fail())
-    {
-        cout << "Fail opening file: " << testcasePath << endl;
-        exit(1);
-    }
-
+void libcellParser(){
     istringstream iss;
     string line, s1, s2, s3;
     int t1, t2, t3;
@@ -104,6 +105,12 @@ void parser(string testcasePath)
             TechB.emplace_back(make_pair(t1, t2));
         }
     }
+}
+
+void DieInfoParser(){
+    istringstream iss;
+    string line, s1, s2, s3;
+    int t1, t2, t3;
 
     // eat newline
     getline(in_file, line);
@@ -121,6 +128,12 @@ void parser(string testcasePath)
     iss >> s1 >> s2 >> Die.utilB;
     Die.techB = s2[1];
     Die.utilB = Die.utilB / 100.;
+}
+
+void cellParser(){
+    istringstream iss;
+    string line, s1, s2, s3;
+    int t1, t2, t3;
 
     // eat newline
     getline(in_file, line);
@@ -136,8 +149,13 @@ void parser(string testcasePath)
         s3 = s3.substr(2);
         cellArray.emplace_back(new cell(stoi(s3)));
     }
+}
 
-    // eat newline
+void netParser(){
+    istringstream iss;
+    string line, s1, s2, s3;
+    int t1, t2, t3;
+
     getline(in_file, line);
 
     // Build netArray
@@ -161,7 +179,23 @@ void parser(string testcasePath)
         }
         netArray.emplace_back(n);
     }
+}
+void parser(string testcasePath)
+{
+    in_file.open(testcasePath);
+    // ifstream in_file(testcasePath);
 
+    if (in_file.fail())
+    {
+        cout << "Fail opening file: " << testcasePath << endl;
+        exit(1);
+    }
+
+    libcellParser();
+    DieInfoParser();
+    cellParser();
+    netParser();
+ 
     // check();
 
     in_file.close();
