@@ -41,7 +41,7 @@ public:
 class net{
 public:
     set<int> cells;
-    int numCells;
+    int numCells; // May be redundant: can be get by cells.size()
     net(){ // dummy node constructor
         numCells = -1;
     }
