@@ -125,7 +125,8 @@ void DieInfoParser()
 {
     istringstream iss;
     string line, s1, s2, s3;
-    int t1, t2, t3;
+    double t1;
+    
 
     // eat newline
     getline(in_file, line);
@@ -135,17 +136,16 @@ void DieInfoParser()
     iss >> s1 >> Die.w >> Die.h;
 
     getIss(iss, line);
-    iss >> s1 >> s2 >> Die.utilA;
+    iss >> s1 >> s2 >> t1;
     Die.techA = s2[1];
-    Die.utilA /= 100;
+    Die.utilA = t1 / 100.;
 
     getIss(iss, line);
-    iss >> s1 >> s2 >> Die.utilB;
+    iss >> s1 >> s2 >> t1;
     Die.techB = s2[1];
-    Die.utilB /= 100.;
+    Die.utilB = t1 / 100.;
 
-    Die.size = (long long) (Die.w * Die.h);
-    // Die.Aarea = Die.Barea = Die.size;
+    Die.size = (Die.w * Die.h);
 }
 
 void cellParser()
@@ -248,16 +248,10 @@ void output(string outputPath)
     // !!! Use cell_V_R map virtual cell id to real cell id !!!
 }
 
-bool sortByAbs(const pair<int, int> &a, const pair<int, int> &b)
-{
-    // sort abs in decreasing
-    return abs(a.first) > abs(b.first);
-}
-
 bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
 {
-    double area = cellShapeInLib.first * cellShapeInLib.second;
-
+    cpp_dec_float_50 area = static_cast<cpp_dec_float_50> (cellShapeInLib.first * cellShapeInLib.second);
+    // double area = cellShapeInLib.first * cellShapeInLib.second;
     if (onDie == 'A')
     {
         if ((Die.Aarea + area) / Die.size < Die.utilA)
@@ -287,77 +281,43 @@ bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
 
 void init_partition()
 {
-    // sort array in decreasing: D[d1, d2, d3... dn], where di be difference between cell area on chip A and B
-    // from the cell having largest difference, put it into the chip has smaller difference
     vector<pair<int, int>> Diff;
-    int cellcount = cellArray.size() - 1;
-    for (int cellVirId = 1; cellVirId <= cellcount; cellVirId++)
+
+    for (int cellVirId = 1; cellVirId < cellArray.size(); cellVirId++)
     {
         int lib = cellArray[cellVirId]->lib;
         int areaA = techA[lib].first * techA[lib].second;
         int areaB = techB[lib].first * techB[lib].second;
-        Diff.emplace_back(make_pair(areaB - areaA, cellVirId)); // Warning: areaA may > areaB, lead to negative
-    }
-    sort(Diff.begin(), Diff.end(), sortByAbs);
-    int cnt = 0;
-    for (auto areaCell : Diff)
-    {
-        int cellVirId = areaCell.second;
         int cellLibId = cellArray[cellVirId]->lib;
-        if (areaCell.first > 0)
-        { // cell size is bigger if made on B
+        cpp_dec_float_50 ra = areaA / Die.size;
+        cpp_dec_float_50 rb = areaB / Die.size;
+
+        if(ra <= rb){
             if (tryPutOn(techA[cellLibId], 'A'))
-            { // first try put on A to minimize total area
                 cellArray[cellVirId]->part = 'A';
-            }
             else if (tryPutOn(techB[cellLibId], 'B'))
-            { // if can't, try put on B
                 cellArray[cellVirId]->part = 'B';
-            }
             else
             {
-                cout << "Die.utilA: " << Die.Aarea / Die.size << endl;
-                double area = techA[cellLibId].first * techA[cellLibId].second;
-                cout << "after put on one more cell: " << (Die.Aarea + area) / Die.size << endl;
-
-                cout << "Die.utilB: " << Die.Barea / Die.size << endl;
-                cout << "after put on one more cell: " << (Die.Barea + area) / Die.size << endl;
-
-                cout << "lefted cell: " << Diff.size()-cnt << endl;
-                cout << "Invalid initial partition(1)!" << endl;
-                exit(1);
-            }
-        }
-        else
-        {
-            if (tryPutOn(techB[cellLibId], 'B'))
-            {
-                cellArray[cellVirId]->part = 'B';
-            }
-            else if (tryPutOn(techA[cellLibId], 'A'))
-            {
+                cout << "Invalid initial partition!" << endl;
                 cellArray[cellVirId]->part = 'A';
-            }
-            else
-            {
-                cout << "Invalid initial partition(2)!" << endl;
-                exit(1);
+                // exit(1);
             }
         }
-        cnt++;
+        else{
+            if (tryPutOn(techB[cellLibId], 'B'))
+                cellArray[cellVirId]->part = 'B';
+            else if (tryPutOn(techA[cellLibId], 'A'))
+                cellArray[cellVirId]->part = 'A';
+            else
+            {
+                cout << "Invalid initial partition!" << endl;
+                cellArray[cellVirId]->part = 'A';
+                // exit(1);
+            }
+        }
+    
     }
-    std::ofstream ofs;
-    ofs.open("output.txt");
-    if (!ofs.is_open())
-    {
-        cout << "Failed to open file.\n";
-        exit;
-    }
-    for (int i = 1; i < cellArray.size(); i++)
-    {
-        ofs << "cell lib " << cellArray[i]->lib << ": " << cellArray[i]->part << endl;
-    }
-    ofs.close();
 }
 
 int main(int argc, char *argv[])

@@ -8,6 +8,8 @@
 #include <time.h>
 #include <cstdlib>
 #include <algorithm>
+#include <iomanip>
+
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
 
@@ -23,11 +25,11 @@ class net;
 
 class die{
 public:
-    int w, h;
-    double utilA, utilB;
+    cpp_dec_float_50 w, h;
+    cpp_dec_float_50 utilA, utilB;
+    cpp_dec_float_50 size;
+    cpp_dec_float_50 Aarea, Barea;
     char techA, techB;
-    int size;
-    int Aarea, Barea;
     die(){
         Aarea = Barea = 0;
     }
