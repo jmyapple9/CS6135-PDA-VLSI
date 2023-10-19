@@ -1,38 +1,22 @@
 #include "main.hpp"
-#include <iostream>
-#include <string>
-#include <fstream>
-#include <vector>
-#include <sstream>
-#include <unordered_map>
-#include <time.h>
-
-using namespace std;
 
 // Utilities flag
-bool TIME = true;
+bool TIME = false;
 
 // Global data structures
 ifstream in_file;
-vector<pair<int, int>> TechA; // index is LibCell number-1 (ex. MC1 will be store at TechA[0])
-vector<pair<int, int>> TechB; // pair<w,t>
+vector<pair<int, int>> techA, techB; // pair<w,t>
 vector<cell *> cellArray;
 vector<net *> netArray;
 die Die;
 
 // GLobal statistics
 int NumTechs;
-int NumLibCells;
 
 // Mapping table are used to prevent index mismapping of: Libcell, Cell, and Net
 // R is the real id in name(eg. MC3, C8, N5)
-// V is the virtual id = the position of node in array(TechA, TechB, cellArray, netArray)
-unordered_map<int, int> lib_R_V;
-unordered_map<int, int> lib_V_R;
-unordered_map<int, int> cell_R_V;
-unordered_map<int, int> cell_V_R;
-unordered_map<int, int> net_R_V;
-unordered_map<int, int> net_V_R;
+// V is the virtual id = the position of node in array(techA, techB, cellArray, netArray)
+unordered_map<int, int> lib_R_V, lib_V_R, cell_R_V, cell_V_R, net_R_V, net_V_R;
 
 pair<string, string> eatArg(int argc, char *argv[])
 {
@@ -58,16 +42,16 @@ void check()
 {
     cout << "checking LibCells:" << endl;
     cout << "LibCells A:" << endl;
-    for (int i = 1; i < TechA.size(); i++)
+    for (int i = 1; i < techA.size(); i++)
     {
-        cout << "MC" << lib_V_R[i] << ": " << TechA[i].first << ", " << TechA[i].second << endl;
+        cout << "MC" << lib_V_R[i] << ": " << techA[i].first << ", " << techA[i].second << endl;
     }
     if (NumTechs > 1)
     {
         cout << "LibCells B:" << endl;
-        for (int i = 1; i < TechB.size(); i++)
+        for (int i = 1; i < techB.size(); i++)
         {
-            cout << "MC" << lib_V_R[i] << ": " << TechB[i].first << ", " << TechB[i].second << endl;
+            cout << "MC" << lib_V_R[i] << ": " << techB[i].first << ", " << techB[i].second << endl;
         }
     }
 
@@ -97,7 +81,7 @@ void libcellParser()
 {
     istringstream iss;
     string line, s1, s2, s3;
-    int t1, t2, t3, LibRealId, LibVirId;
+    int t1, t2, t3, LibRealId, LibVirId, libcellCount;
 
     // NumTechs
     getIss(iss, line);
@@ -105,32 +89,35 @@ void libcellParser()
 
     // Tech TA's LibCell
     getIss(iss, line);
-    iss >> s1 >> s2 >> NumLibCells;
+    iss >> s1 >> s2 >> libcellCount;
 
-    TechA.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
-    for (int LibVirId = 1; LibVirId <= NumLibCells; LibVirId++)
+    techA.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
+    for (int LibVirId = 1; LibVirId <= libcellCount; LibVirId++)
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> t1 >> t2;
         LibRealId = stoi(s2.substr(2));
-        TechA.emplace_back(make_pair(t1, t2));
+        techA.emplace_back(make_pair(t1, t2));
         lib_R_V[LibRealId] = LibVirId;
         lib_V_R[LibVirId] = LibRealId;
     }
 
     // Tech TB's LibCell, if exist
-    if (NumTechs == 2)
+    if (NumTechs > 1)
     {
         getIss(iss, line);
-        iss >> s1 >> s2 >> NumLibCells;
+        iss >> s1 >> s2 >> libcellCount;
 
-        TechB.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
-        for (int LibVirId = 1; LibVirId <= NumLibCells; LibVirId++)
+        techB.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
+        for (int LibVirId = 1; LibVirId <= libcellCount; LibVirId++)
         {
             getIss(iss, line);
             iss >> s1 >> s2 >> t1 >> t2;
-            TechB.emplace_back(make_pair(t1, t2));
+            techB.emplace_back(make_pair(t1, t2));
         }
+    }
+    else{
+        techB = techA;
     }
 }
 
@@ -150,12 +137,15 @@ void DieInfoParser()
     getIss(iss, line);
     iss >> s1 >> s2 >> Die.utilA;
     Die.techA = s2[1];
-    Die.utilA = Die.utilA / 100.;
+    Die.utilA /= 100;
 
     getIss(iss, line);
     iss >> s1 >> s2 >> Die.utilB;
     Die.techB = s2[1];
-    Die.utilB = Die.utilB / 100.;
+    Die.utilB /= 100.;
+
+    Die.size = (long long) (Die.w * Die.h);
+    // Die.Aarea = Die.Barea = Die.size;
 }
 
 void cellParser()
@@ -213,13 +203,14 @@ void netParser()
             iss >> s1 >> s2;
             int cellRealId = stoi(s2.substr(1));
             int cellVirId = cell_R_V[cellRealId];
-            n->cells.insert(cellVirId);
+            n->cells.push_back(cellVirId);
             // Also build cellArray
-            cellArray[cellVirId]->nets.insert(netVirId);
+            cellArray[cellVirId]->nets.push_back(netVirId);
         }
         netArray.emplace_back(n);
     }
 }
+
 void parser(string testcasePath)
 {
     clock_t start, end;
@@ -248,7 +239,7 @@ void parser(string testcasePath)
     cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
 
     if (TIME)
-        printf("Time = %f\n", cpu_time_used);
+        printf("Parsing Time = %f\n", cpu_time_used);
 }
 
 void output(string outputPath)
@@ -256,10 +247,125 @@ void output(string outputPath)
     // !!! MUST REMEMBER !!!
     // !!! Use cell_V_R map virtual cell id to real cell id !!!
 }
+
+bool sortByAbs(const pair<int, int> &a, const pair<int, int> &b)
+{
+    // sort abs in decreasing
+    return abs(a.first) > abs(b.first);
+}
+
+bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
+{
+    double area = cellShapeInLib.first * cellShapeInLib.second;
+
+    if (onDie == 'A')
+    {
+        if ((Die.Aarea + area) / Die.size < Die.utilA)
+        {
+            Die.Aarea += area;
+            return true;
+        }
+        else
+            return false;
+    }
+    else if (onDie == 'B')
+    {
+        if ((Die.Barea + area) / Die.size < Die.utilB)
+        {
+            Die.Barea += area;
+            return true;
+        }
+        else
+            return false;
+    }
+    else
+    {
+        cout << "Unknown die: " << onDie << endl;
+        return false;
+    }
+}
+
+void init_partition()
+{
+    // sort array in decreasing: D[d1, d2, d3... dn], where di be difference between cell area on chip A and B
+    // from the cell having largest difference, put it into the chip has smaller difference
+    vector<pair<int, int>> Diff;
+    int cellcount = cellArray.size() - 1;
+    for (int cellVirId = 1; cellVirId <= cellcount; cellVirId++)
+    {
+        int lib = cellArray[cellVirId]->lib;
+        int areaA = techA[lib].first * techA[lib].second;
+        int areaB = techB[lib].first * techB[lib].second;
+        Diff.emplace_back(make_pair(areaB - areaA, cellVirId)); // Warning: areaA may > areaB, lead to negative
+    }
+    sort(Diff.begin(), Diff.end(), sortByAbs);
+    int cnt = 0;
+    for (auto areaCell : Diff)
+    {
+        int cellVirId = areaCell.second;
+        int cellLibId = cellArray[cellVirId]->lib;
+        if (areaCell.first > 0)
+        { // cell size is bigger if made on B
+            if (tryPutOn(techA[cellLibId], 'A'))
+            { // first try put on A to minimize total area
+                cellArray[cellVirId]->part = 'A';
+            }
+            else if (tryPutOn(techB[cellLibId], 'B'))
+            { // if can't, try put on B
+                cellArray[cellVirId]->part = 'B';
+            }
+            else
+            {
+                cout << "Die.utilA: " << Die.Aarea / Die.size << endl;
+                double area = techA[cellLibId].first * techA[cellLibId].second;
+                cout << "after put on one more cell: " << (Die.Aarea + area) / Die.size << endl;
+
+                cout << "Die.utilB: " << Die.Barea / Die.size << endl;
+                cout << "after put on one more cell: " << (Die.Barea + area) / Die.size << endl;
+
+                cout << "lefted cell: " << Diff.size()-cnt << endl;
+                cout << "Invalid initial partition(1)!" << endl;
+                exit(1);
+            }
+        }
+        else
+        {
+            if (tryPutOn(techB[cellLibId], 'B'))
+            {
+                cellArray[cellVirId]->part = 'B';
+            }
+            else if (tryPutOn(techA[cellLibId], 'A'))
+            {
+                cellArray[cellVirId]->part = 'A';
+            }
+            else
+            {
+                cout << "Invalid initial partition(2)!" << endl;
+                exit(1);
+            }
+        }
+        cnt++;
+    }
+    std::ofstream ofs;
+    ofs.open("output.txt");
+    if (!ofs.is_open())
+    {
+        cout << "Failed to open file.\n";
+        exit;
+    }
+    for (int i = 1; i < cellArray.size(); i++)
+    {
+        ofs << "cell lib " << cellArray[i]->lib << ": " << cellArray[i]->part << endl;
+    }
+    ofs.close();
+}
+
 int main(int argc, char *argv[])
 {
     auto [testcasePath, outputPath] = eatArg(argc, argv);
     parser(testcasePath);
+
+    init_partition();
 
     output(outputPath);
 }
