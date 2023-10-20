@@ -3,3 +3,6 @@ all:
 
 clean:
 	rm ../bin/hw2
+
+verify:
+	../bin/verify ../testcase/sample.txt ../output/sample.out

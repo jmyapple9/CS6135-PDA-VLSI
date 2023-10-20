@@ -43,10 +43,6 @@ public:
     int gain;
     int crid; // just for debug (cell real id)
     list<cell*>::iterator cellIt;
-    // cell(){ // dummy node constructor
-    //     c = nullptr;
-    //     lib = -1;
-    // }
     cell(int _lib){
         lib = _lib;
         lock = false;

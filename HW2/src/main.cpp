@@ -13,7 +13,8 @@ die Die;
 
 // GLobal statistics
 int NumTechs;
-int pmax = 0;
+int pmax;
+int cutsize;
 // Mapping table are used to prevent index mismapping of: Libcell, Cell, and Net
 // R is the real id in name(eg. MC3, C8, N5)
 // V is the virtual id = the position of node in array(techA, techB, cellArray, netArray)
@@ -241,6 +242,25 @@ void output(string outputPath)
 {
     // !!! MUST REMEMBER !!!
     // !!! Use cell_V_R map virtual cell id to real cell id !!!
+    ofstream outputfile;
+    outputfile.open (outputPath);
+
+    vector<cell*> setA, setB;
+    for(auto c:cellArray){
+        if(c->part=='A') setA.emplace_back(c);
+        else setB.emplace_back(c);
+    }
+
+    outputfile << "CutSize " << cutsize << endl;
+    outputfile << "DieA " << setA.size()<<endl;
+    for(auto c: setA)
+        outputfile << "C" << c->crid << endl;
+
+    outputfile << "DieB " << setB.size()<<endl;
+    for(auto c: setB)
+        outputfile << "C" << c->crid << endl;
+
+    outputfile.close();
 }
 
 bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
@@ -340,6 +360,9 @@ void init_distribution()
         }
         n->distr.first = Ai;
         n->distr.second = Bi;
+
+        if(Ai != n->cells.size() and Bi != n->cells.size())
+            cutsize++;
     }
 
     // for(int i = 0; i < netArray.size(); i++){
