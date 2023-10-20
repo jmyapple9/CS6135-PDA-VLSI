@@ -5,6 +5,7 @@ bool TIME = false;
 
 // Global data structures
 ifstream in_file;
+bucketList *bListA, *bListB;
 vector<pair<int, int>> techA, techB; // pair<w,t>
 vector<cell *> cellArray;
 vector<net *> netArray;
@@ -12,11 +13,11 @@ die Die;
 
 // GLobal statistics
 int NumTechs;
-
+int pmax = 0;
 // Mapping table are used to prevent index mismapping of: Libcell, Cell, and Net
 // R is the real id in name(eg. MC3, C8, N5)
 // V is the virtual id = the position of node in array(techA, techB, cellArray, netArray)
-unordered_map<int, int> lib_R_V, lib_V_R, cell_R_V, cell_V_R, net_R_V, net_V_R;
+unordered_map<int, int> lib_R_V, lib_V_R, cell_R_V, cell_V_R, net_R_V, net_V_R; // some of them can be delete if code is bug free
 
 pair<string, string> eatArg(int argc, char *argv[])
 {
@@ -59,9 +60,9 @@ void check()
     for (int i = 0; i < netArray.size(); i++)
     {
         cout << "In net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
-        for (int c : netArray[i]->cells)
+        for (auto c : netArray[i]->cells)
         {
-            cout << cell_V_R[c] << " ";
+            cout << c->crid << " ";
         }
         cout << endl;
     }
@@ -69,9 +70,9 @@ void check()
     for (int i = 0; i < cellArray.size(); i++)
     {
         cout << "In cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
-        for (int n : cellArray[i]->nets)
+        for (auto n : cellArray[i]->nets)
         {
-            cout << net_V_R[n] << " ";
+            cout << n->nrid << " ";
         }
         cout << endl;
     }
@@ -90,8 +91,6 @@ void libcellParser()
     // Tech TA's LibCell
     getIss(iss, line);
     iss >> s1 >> s2 >> libcellCount;
-
-    // techA.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
     for (int LibVirId = 0; LibVirId < libcellCount; LibVirId++)
     {
         getIss(iss, line);
@@ -107,8 +106,6 @@ void libcellParser()
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> libcellCount;
-
-        // techB.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
         for (int LibVirId = 0; LibVirId < libcellCount; LibVirId++)
         {
             getIss(iss, line);
@@ -116,7 +113,8 @@ void libcellParser()
             techB.emplace_back(make_pair(t1, t2));
         }
     }
-    else{
+    else
+    {
         techB = techA;
     }
 }
@@ -126,7 +124,6 @@ void DieInfoParser()
     istringstream iss;
     string line, s1, s2, s3;
     double t1;
-    
 
     // eat newline
     getline(in_file, line);
@@ -160,7 +157,6 @@ void cellParser()
     // build cell array
     getIss(iss, line);
     iss >> s1 >> cellCount;
-    // cellArray.emplace_back(new cell());
     for (int cellVirId = 0; cellVirId < cellCount; cellVirId++)
     {
         getIss(iss, line);
@@ -172,6 +168,7 @@ void cellParser()
         cellRealId = stoi(s2.substr(1));
         cell_R_V[cellRealId] = cellVirId;
         cell_V_R[cellVirId] = cellRealId;
+        cellArray[cellVirId]->crid = cellRealId; // only for debug
     }
 }
 
@@ -186,28 +183,30 @@ void netParser()
     // Build netArray
     getIss(iss, line);
     iss >> s1 >> netCount;
-    // netArray.emplace_back(new net());
     for (int netVirId = 0; netVirId < netCount; netVirId++)
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> cellCount;
         netRealId = stoi(s2.substr(1));
 
+        net *n = new net(cellCount);
+        netArray.emplace_back(n);
         net_R_V[netRealId] = netVirId;
         net_V_R[netVirId] = netRealId;
+        netArray[netVirId]->nrid = netRealId; // only for debug
 
-        net *n = new net(cellCount);
         while (cellCount--)
         {
             getIss(iss, line);
             iss >> s1 >> s2;
             int cellRealId = stoi(s2.substr(1));
             int cellVirId = cell_R_V[cellRealId];
-            n->cells.push_back(cellVirId);
+            n->cells.push_back(cellArray[cellVirId]);
             // Also build cellArray
-            cellArray[cellVirId]->nets.push_back(netVirId);
+            cellArray[cellVirId]->nets.push_back(n);
+            int numP = cellArray[cellVirId]->nets.size();
+            pmax = max(pmax, numP);
         }
-        netArray.emplace_back(n);
     }
 }
 
@@ -218,7 +217,6 @@ void parser(string testcasePath)
     start = clock();
 
     in_file.open(testcasePath);
-    // ifstream in_file(testcasePath);
 
     if (in_file.fail())
     {
@@ -235,7 +233,6 @@ void parser(string testcasePath)
 
     in_file.close();
 
-
     if (TIME)
         printf("Parsing Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
 }
@@ -248,7 +245,7 @@ void output(string outputPath)
 
 bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
 {
-    cpp_dec_float_50 area = static_cast<cpp_dec_float_50> (cellShapeInLib.first * cellShapeInLib.second);
+    cpp_dec_float_50 area = static_cast<cpp_dec_float_50>(cellShapeInLib.first * cellShapeInLib.second);
     // double area = cellShapeInLib.first * cellShapeInLib.second;
     if (onDie == 'A')
     {
@@ -288,10 +285,9 @@ void init_partition()
         int areaA = techA[lib].first * techA[lib].second;
         int areaB = techB[lib].first * techB[lib].second;
         int cellLibId = cellArray[cellVirId]->lib;
-        cpp_dec_float_50 ra = areaA / Die.size;
-        cpp_dec_float_50 rb = areaB / Die.size;
 
-        if(ra <= rb){ // can't delete this line  !!!
+        if (areaA <= areaB)
+        { // can't delete this line  !!!
             if (tryPutOn(techA[cellLibId], 'A'))
                 cellArray[cellVirId]->part = 'A';
             else if (tryPutOn(techB[cellLibId], 'B'))
@@ -303,7 +299,8 @@ void init_partition()
                 // exit(1);
             }
         }
-        else{ // can't delete this line  !!!
+        else
+        { // can't delete this line  !!!
             if (tryPutOn(techB[cellLibId], 'B'))
                 cellArray[cellVirId]->part = 'B';
             else if (tryPutOn(techA[cellLibId], 'A'))
@@ -327,41 +324,62 @@ void init_partition()
         printf("Initial partition Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
 }
 
-void init_distribution(){
-    for(auto n: netArray){
+void init_distribution()
+{
+    for (auto n : netArray)
+    {
         int Ai = 0, Bi = 0;
-        for(int cellVirId: n->cells){
-            cell* c = cellArray[cellVirId];
-            if(c->part == 'A') Ai++;
-            else if(c->part =='B') Bi++;
-            else cout << "Error! cell isn't in neither part A or B!" << endl;
+        for (auto c : n->cells)
+        {
+            if (c->part == 'A')
+                Ai++;
+            else if (c->part == 'B')
+                Bi++;
+            else
+                cout << "Error! cell isn't in neither part A or B!" << endl;
         }
         n->distr.first = Ai;
         n->distr.second = Bi;
     }
-    
+
     // for(int i = 0; i < netArray.size(); i++){
     //     cout << "net " << i+1 << " has "<<netArray[i]->cells.size() << " cells: "\
     //     << netArray[i]->distr.first << ", "<<netArray[i]->distr.second<<endl;
-         
     // }
 }
 
-void init_cellGain(){
-    for(auto c: cellArray){
+void init_cellGain()
+{
+    for (auto c : cellArray)
+    {
         int gain = 0;
-        for(auto netVirId: c->nets){
+        for (auto n : c->nets)
+        {
             int F, T;
-            net* n = netArray[netVirId];
-            if(c->part=='A') F = n->distr.first, T = n->distr.second;
-            else F = n->distr.second, T = n->distr.first;
+            // net* n = netArray[netVirId];
+            if (c->part == 'A')
+                F = n->distr.first, T = n->distr.second;
+            else
+                F = n->distr.second, T = n->distr.first;
 
-            if(F == 1)
+            if (F == 1)
                 gain++;
-            if(T==0)
+            if (T == 0)
                 gain--;
         }
+        if (c->part == 'A')
+            bListA->insert(gain, c);
+        else
+            bListB->insert(gain, c);
     }
+}
+
+void init_bucketList()
+{
+    bListA = new bucketList(pmax);
+    bListB = new bucketList(pmax);
+    init_distribution();
+    init_cellGain();
 }
 
 int main(int argc, char *argv[])
@@ -372,11 +390,13 @@ int main(int argc, char *argv[])
     parser(testcasePath);
     // check();
     init_partition();
-    init_distribution();
-    init_cellGain();
+
+    init_bucketList();
+
     output(outputPath);
 
-    if (TIME){
+    if (TIME)
+    {
         cout << "-------------------------------" << endl;
         printf("Total exe Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
     }

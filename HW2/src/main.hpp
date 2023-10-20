@@ -9,7 +9,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <iomanip>
-
+#include <iterator>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/multiprecision/cpp_dec_float.hpp>
 
@@ -18,9 +18,7 @@ using namespace boost::multiprecision;
 
 class die;
 class cell;
-class cellNum;
 class net;
-// class netNum;
 
 
 class die{
@@ -33,24 +31,18 @@ public:
     die(){
         Aarea = Barea = 0;
     }
-    // int w, h;
-    // cpp_dec_float_50 utilA, utilB;
-    // char techA, techB;
-    // cpp_int size;
-    // cpp_int Aarea, Barea;
-    // die(){
-    //     Aarea = Barea = 0;
-    // }
 };
 
 class cell{
 public:
-    list<int> nets;
-    cellNum* c;
+    list<net*> nets;
+    // cellNum* c;
     int lib; // cell libarary virtual id
     bool lock; // true=locked, false=unlock
     char part; // partition A or B
     int gain;
+    int crid; // just for debug (cell real id)
+    list<cell*>::iterator cellIt;
     // cell(){ // dummy node constructor
     //     c = nullptr;
     //     lib = -1;
@@ -62,33 +54,33 @@ public:
     }
 };
 
-class cellNum{
-public:
-    cellNum *prev, *next;
-    int id;
-};
 
 class net{
 public:
-    list<int> cells;
+    list<cell*> cells;
     int numCells; // May be redundant: can be get by cells.size()
+    int nrid; // net real id
     pair<int,int> distr; // for net i, # of cell in partition A or B:<A(i), B(i)>
-    // net(){ // dummy node constructor
-    //     numCells = -1;
-    // }
     net(int _numCells){
         numCells = _numCells;
     }
 };
 
-// class netNum{
-// public:
-//     netNum *prev, *next;
-//     int id;
-// };
-
 class bucketList{
 public:
-    int Pmax;
+    int Pmax, maxGain;
+    vector<list<cell*>> gainList;
+    bucketList(int _Pmax){
+        Pmax = _Pmax;
+        int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
+        gainList.resize(bListLen);
+    }
+
+    void insert(int gainValue, cell* c){
+        int idx = gainValue + Pmax;
+        gainList[idx].emplace_back(c);
+        list<cell*>::iterator it = prev(gainList[idx].end());
+        c->cellIt = it;
+    }
     
 };
