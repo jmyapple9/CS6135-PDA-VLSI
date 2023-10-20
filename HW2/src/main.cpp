@@ -42,21 +42,21 @@ void check()
 {
     cout << "checking LibCells:" << endl;
     cout << "LibCells A:" << endl;
-    for (int i = 1; i < techA.size(); i++)
+    for (int i = 0; i < techA.size(); i++)
     {
         cout << "MC" << lib_V_R[i] << ": " << techA[i].first << ", " << techA[i].second << endl;
     }
     if (NumTechs > 1)
     {
         cout << "LibCells B:" << endl;
-        for (int i = 1; i < techB.size(); i++)
+        for (int i = 0; i < techB.size(); i++)
         {
             cout << "MC" << lib_V_R[i] << ": " << techB[i].first << ", " << techB[i].second << endl;
         }
     }
 
     cout << "checking net Array:" << endl;
-    for (int i = 1; i < netArray.size(); i++)
+    for (int i = 0; i < netArray.size(); i++)
     {
         cout << "In net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
         for (int c : netArray[i]->cells)
@@ -66,7 +66,7 @@ void check()
         cout << endl;
     }
     cout << "\nchecking cell Array:" << endl;
-    for (int i = 1; i < cellArray.size(); i++)
+    for (int i = 0; i < cellArray.size(); i++)
     {
         cout << "In cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
         for (int n : cellArray[i]->nets)
@@ -91,8 +91,8 @@ void libcellParser()
     getIss(iss, line);
     iss >> s1 >> s2 >> libcellCount;
 
-    techA.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
-    for (int LibVirId = 1; LibVirId <= libcellCount; LibVirId++)
+    // techA.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
+    for (int LibVirId = 0; LibVirId < libcellCount; LibVirId++)
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> t1 >> t2;
@@ -108,8 +108,8 @@ void libcellParser()
         getIss(iss, line);
         iss >> s1 >> s2 >> libcellCount;
 
-        techB.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
-        for (int LibVirId = 1; LibVirId <= libcellCount; LibVirId++)
+        // techB.emplace_back(make_pair(-1, -1)); // put dummy node at index 0
+        for (int LibVirId = 0; LibVirId < libcellCount; LibVirId++)
         {
             getIss(iss, line);
             iss >> s1 >> s2 >> t1 >> t2;
@@ -160,8 +160,8 @@ void cellParser()
     // build cell array
     getIss(iss, line);
     iss >> s1 >> cellCount;
-    cellArray.emplace_back(new cell());
-    for (int cellVirId = 1; cellVirId <= cellCount; cellVirId++)
+    // cellArray.emplace_back(new cell());
+    for (int cellVirId = 0; cellVirId < cellCount; cellVirId++)
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> s3;
@@ -186,8 +186,8 @@ void netParser()
     // Build netArray
     getIss(iss, line);
     iss >> s1 >> netCount;
-    netArray.emplace_back(new net());
-    for (int netVirId = 1; netVirId <= netCount; netVirId++)
+    // netArray.emplace_back(new net());
+    for (int netVirId = 0; netVirId < netCount; netVirId++)
     {
         getIss(iss, line);
         iss >> s1 >> s2 >> cellCount;
@@ -235,11 +235,9 @@ void parser(string testcasePath)
 
     in_file.close();
 
-    end = clock();
-    cpu_time_used = ((double)(end - start)) / CLOCKS_PER_SEC;
 
     if (TIME)
-        printf("Parsing Time = %f\n", cpu_time_used);
+        printf("Parsing Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
 }
 
 void output(string outputPath)
@@ -281,9 +279,10 @@ bool tryPutOn(pair<int, int> cellShapeInLib, char onDie)
 
 void init_partition()
 {
+    clock_t start = clock();
     vector<pair<int, int>> Diff;
 
-    for (int cellVirId = 1; cellVirId < cellArray.size(); cellVirId++)
+    for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++)
     {
         int lib = cellArray[cellVirId]->lib;
         int areaA = techA[lib].first * techA[lib].second;
@@ -292,7 +291,7 @@ void init_partition()
         cpp_dec_float_50 ra = areaA / Die.size;
         cpp_dec_float_50 rb = areaB / Die.size;
 
-        if(ra <= rb){
+        if(ra <= rb){ // can't delete this line  !!!
             if (tryPutOn(techA[cellLibId], 'A'))
                 cellArray[cellVirId]->part = 'A';
             else if (tryPutOn(techB[cellLibId], 'B'))
@@ -304,7 +303,7 @@ void init_partition()
                 // exit(1);
             }
         }
-        else{
+        else{ // can't delete this line  !!!
             if (tryPutOn(techB[cellLibId], 'B'))
                 cellArray[cellVirId]->part = 'B';
             else if (tryPutOn(techA[cellLibId], 'A'))
@@ -316,16 +315,69 @@ void init_partition()
                 // exit(1);
             }
         }
+    }
+    // ofstream myfile;
+    // myfile.open ("output.txt");
+    // int i = 0;
+    // for(auto c:cellArray)
+    //     cout << "cell " << ++i << " in " << c->part <<endl;
+    // myfile.close();
+
+    if (TIME)
+        printf("Initial partition Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
+}
+
+void init_distribution(){
+    for(auto n: netArray){
+        int Ai = 0, Bi = 0;
+        for(int cellVirId: n->cells){
+            cell* c = cellArray[cellVirId];
+            if(c->part == 'A') Ai++;
+            else if(c->part =='B') Bi++;
+            else cout << "Error! cell isn't in neither part A or B!" << endl;
+        }
+        n->distr.first = Ai;
+        n->distr.second = Bi;
+    }
     
+    // for(int i = 0; i < netArray.size(); i++){
+    //     cout << "net " << i+1 << " has "<<netArray[i]->cells.size() << " cells: "\
+    //     << netArray[i]->distr.first << ", "<<netArray[i]->distr.second<<endl;
+         
+    // }
+}
+
+void init_cellGain(){
+    for(auto c: cellArray){
+        int gain = 0;
+        for(auto netVirId: c->nets){
+            int F, T;
+            net* n = netArray[netVirId];
+            if(c->part=='A') F = n->distr.first, T = n->distr.second;
+            else F = n->distr.second, T = n->distr.first;
+
+            if(F == 1)
+                gain++;
+            if(T==0)
+                gain--;
+        }
     }
 }
 
 int main(int argc, char *argv[])
 {
+    clock_t start = clock();
     auto [testcasePath, outputPath] = eatArg(argc, argv);
+
     parser(testcasePath);
-
+    // check();
     init_partition();
-
+    init_distribution();
+    init_cellGain();
     output(outputPath);
+
+    if (TIME){
+        cout << "-------------------------------" << endl;
+        printf("Total exe Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
+    }
 }

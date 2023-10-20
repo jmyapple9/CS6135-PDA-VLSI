@@ -50,13 +50,15 @@ public:
     int lib; // cell libarary virtual id
     bool lock; // true=locked, false=unlock
     char part; // partition A or B
-    cell(){ // dummy node constructor
-        c = nullptr;
-        lib = -1;
-    }
+    int gain;
+    // cell(){ // dummy node constructor
+    //     c = nullptr;
+    //     lib = -1;
+    // }
     cell(int _lib){
         lib = _lib;
         lock = false;
+        gain = 0;
     }
 };
 
@@ -70,9 +72,10 @@ class net{
 public:
     list<int> cells;
     int numCells; // May be redundant: can be get by cells.size()
-    net(){ // dummy node constructor
-        numCells = -1;
-    }
+    pair<int,int> distr; // for net i, # of cell in partition A or B:<A(i), B(i)>
+    // net(){ // dummy node constructor
+    //     numCells = -1;
+    // }
     net(int _numCells){
         numCells = _numCells;
     }
@@ -83,3 +86,9 @@ public:
 //     netNum *prev, *next;
 //     int id;
 // };
+
+class bucketList{
+public:
+    int Pmax;
+    
+};
