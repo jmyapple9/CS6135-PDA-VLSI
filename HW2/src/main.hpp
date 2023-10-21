@@ -15,11 +15,17 @@
 
 using namespace std;
 using namespace boost::multiprecision;
+/* 
+useful regular expression to find "Net NX Y", where X, Y are numbers: Net N[\d]+ [\d]+
+ */
 
 class die;
 class cell;
 class net;
 
+typedef std::vector<std::list<cell*>>::iterator bListIterator;
+typedef list<cell*>::iterator listCellIter;
+typedef list<cell*> listCell;
 
 class die{
 public:
@@ -39,7 +45,7 @@ public:
     // cellNum* c;
     int lib; // cell libarary virtual id
     bool lock; // true=locked, false=unlock
-    char part; // partition A or B
+    bool part; // partition A(true) or B(false)
     int gain;
     int crid; // just for debug (cell real id)
     list<cell*>::iterator cellIt;
@@ -64,10 +70,10 @@ public:
 
 class bucketList{
 public:
-    int Pmax, maxGain;
+    int Pmax, maxGain, cellNum;
     vector<list<cell*>> gainList;
     bucketList(int _Pmax){
-        Pmax = _Pmax;
+        Pmax = maxGain = _Pmax;
         int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
         gainList.resize(bListLen);
     }
@@ -75,8 +81,18 @@ public:
     void insert(int gainValue, cell* c){
         int idx = gainValue + Pmax;
         gainList[idx].emplace_back(c);
-        list<cell*>::iterator it = prev(gainList[idx].end());
+        listCellIter it = prev(gainList[idx].end());
         c->cellIt = it;
+        cellNum++;
     }
-    
+    void erase(listCell LC, listCellIter cit){
+        LC.erase(cit);
+        cellNum--;
+    }
+    int size(){
+        return cellNum;
+    }
+    list<cell*> &getMaxGainList(int validMaxGainA){
+        return gainList[validMaxGainA];
+    }
 };
