@@ -1,12 +1,14 @@
-CXXFLAGS = -O3 -std=c++2a
+CXXFLAGS = -O3 -std=c++17
 LIBS = -I /usr/local/include/boost/
+# LIBS_ON_LAPTOP = -I "C:\Users\jmyap\boost_1_83_0"
 OUTPUT_DIR = ../bin/
 TESTCASE_DIR = ../testcase/
 OUTPUT_DIR_PUBLIC = ../output/
 PROGRAM_NAME = hw2
 
 all:
-	g++ $(CXXFLAGS) $(LIBS) main.cpp -o $(OUTPUT_DIR)$(PROGRAM_NAME)
+	g++ $(CXXFLAGS) main.cpp -o $(OUTPUT_DIR)$(PROGRAM_NAME)
+#	g++ $(CXXFLAGS) $(LIBS_ON_LAPTOP) main.cpp -o $(OUTPUT_DIR)$(PROGRAM_NAME)
 
 
 clean:

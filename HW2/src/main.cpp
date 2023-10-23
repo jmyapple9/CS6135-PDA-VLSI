@@ -110,7 +110,7 @@ void DieInfoParser()
     istringstream iss;
     string line, s1, s2, s3;
     double t1;
-
+    double utilA, utilB;
     // eat newline
     getline(in_file, line);
 
@@ -121,14 +121,20 @@ void DieInfoParser()
     getIss(iss, line);
     iss >> s1 >> s2 >> t1;
     Die.techA = s2[1];
-    Die.utilA = t1 / 100.;
+    utilA = t1 / 100.;
 
     getIss(iss, line);
     iss >> s1 >> s2 >> t1;
     Die.techB = s2[1];
-    Die.utilB = t1 / 100.;
+    utilB = t1 / 100.;
 
     Die.size = (Die.w * Die.h);
+    Die.availA = Die.size * utilA;
+    Die.availB = Die.size * utilB;
+    // cout << "Die.size: " << Die.size <<endl;
+    // cout << "DieA available: " << Die.availA <<endl;
+    // cout << "DieB available: " << Die.availB <<endl;
+
 }
 
 void cellParser()
@@ -246,10 +252,10 @@ void output(string outputPath){
 bool tryPutOn(int cellLibId, bool onDie)
 {
     pair<int, int> cellShapeInLib = (onDie==true) ? techA[cellLibId] : techB[cellLibId];
-    cpp_dec_float_50 area = static_cast<cpp_dec_float_50>(cellShapeInLib.first * cellShapeInLib.second);
+    long long area = static_cast<long long>(cellShapeInLib.first * cellShapeInLib.second);
     // double area = cellShapeInLib.first * cellShapeInLib.second;
     if (onDie == true){
-        if ((Die.Aarea + area) / Die.size < Die.utilA){
+        if ((Die.Aarea + area) < Die.availA){
             Die.Aarea += area;
             return true;
         }
@@ -257,7 +263,7 @@ bool tryPutOn(int cellLibId, bool onDie)
             return false;
     }
     else if (onDie == false){
-        if ((Die.Barea + area) / Die.size < Die.utilB){
+        if ((Die.Barea + area) < Die.availB){
             Die.Barea += area;
             return true;
         }
@@ -496,8 +502,8 @@ void FM(){
     int Gk = 0;
 
 
-    init_distribution();
-    init_cellGain();
+    // init_distribution();
+    // init_cellGain();
 
     while(1){
         pass();
@@ -516,7 +522,9 @@ int main(int argc, char *argv[]){
     parser(testcasePath);
     // check();
     init_partition();
-    FM();
+    init_distribution();
+
+    // FM();
     
     // init_bucketList();
 

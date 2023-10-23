@@ -10,11 +10,11 @@
 #include <algorithm>
 #include <iomanip>
 #include <iterator>
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/multiprecision/cpp_dec_float.hpp>
+// #include <boost/multiprecision/cpp_int.hpp>
+// #include <boost/multiprecision/cpp_dec_float.hpp>
 
 using namespace std;
-using namespace boost::multiprecision;
+// using namespace boost::multiprecision;
 /* 
 useful regular expression to find "Net NX Y", where X, Y are numbers: Net N[\d]+ [\d]+
  */
@@ -29,10 +29,11 @@ typedef list<cell*> listCell;
 
 class die{
 public:
-    cpp_dec_float_50 w, h;
-    cpp_dec_float_50 utilA, utilB;
-    cpp_dec_float_50 size;
-    cpp_dec_float_50 Aarea, Barea;
+    long long w, h;
+    // double utilA, utilB;
+    long long availA, availB;
+    long long size;
+    long long Aarea, Barea;
     char techA, techB;
     die(){
         Aarea = Barea = 0;
