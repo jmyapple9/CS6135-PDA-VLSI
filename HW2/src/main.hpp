@@ -77,6 +77,7 @@ public:
         Pmax = maxGain = _Pmax;
         int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
         gainList.resize(bListLen);
+        cellNum = 0;
     }
 
     void insert(int gainValue, cell* c){

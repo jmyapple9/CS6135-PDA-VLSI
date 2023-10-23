@@ -9,6 +9,7 @@ bucketList *bListA, *bListB;
 vector<pair<int, int>> techA, techB; // pair<w,t>
 vector<cell *> cellArray;
 vector<net *> netArray;
+vector<int> steps; // cell vir id
 // vector<cell *> freeCellList; // after the pass, just put item back to bListA, bListB. Accroding to their new gains.
 die Die;
 
@@ -16,6 +17,7 @@ die Die;
 int NumTechs;
 int pmax;
 int cutsize;
+int Gk;
 // Mapping table are used to prevent index mismapping of: Libcell, Cell, and Net
 // R is the real id in name(eg. MC3, C8, N5)
 // V is the virtual id = the position of node in array(techA, techB, cellArray, netArray)
@@ -325,6 +327,7 @@ void init_partition()
 
 void init_distribution()
 {
+    cutsize = 0;
     for (auto n : netArray){
         int Ai = 0, Bi = 0;
         for (auto c : n->cells){
@@ -378,10 +381,13 @@ If this cell is valid to move(under area constraint of dieA, dieB)
 erase it from bucket list, and put it into free cell list(locked cell)
  */
 cell* maxGainCell(){
+    // cout << "maxGainCell()" << endl;
+
     listCellIter it;
     while(bListA->size() > 0 or bListB->size() > 0){
         int validMaxGainA = bListA->maxGain;
         int validMaxGainB = bListA->maxGain;
+        // cout << "validMaxGainA: " << validMaxGainA << ", " << "validMaxGainB: " << validMaxGainB << endl;
         if(validMaxGainA > validMaxGainB){
             listCell& lcA = bListA->getMaxGainList(validMaxGainA);
             if(!lcA.empty()){
@@ -459,7 +465,7 @@ void updateGain(cell* baseCell){
             for(auto c: n->cells){
                 if(!c->lock) c->gain--; 
             }
-            // baseCell gain: original +1, now -1, should be ++ one more times
+            // baseCell gain: original +1, now -1, should be -- one more times
             baseCell->gain -= 1;
         }
         else if(F==1){
@@ -475,43 +481,48 @@ void updateGain(cell* baseCell){
     
 }
 
-void reverseGain(){
-
-}
-
-void reverseDistr(){
-
-}
-
-void resetLocked(){
-    
-}
-
 void pass(){
+    // cout << "pass()" << endl;
+
     cell* baseCell;
-    do{
-        baseCell = maxGainCell();
-        // baseCell
+    init_distribution();
+    init_cellGain();
+    while(baseCell = maxGainCell()){
+        Gk += baseCell->gain;
+        // cout << "Gk: " << Gk << endl;
+        steps.emplace_back(baseCell->gain);
         updateGain(baseCell);
     }
-    while(baseCell!=nullptr);
+}
 
+int getBestMove(){
+    int k = steps.size();
+    int prefix[k];
+    prefix[0] = steps[0];
+    for(int i = 1; i < k; i++){
+        prefix[i] = prefix[i] + steps[i];
+    }
+    
+    int bestSeqIdx=-1, m = -1;
+    for(int i = 0; i < k; i++){
+        if(m < prefix[i]) bestSeqIdx = i;
+    }
+    return m;
 }
 
 void FM(){
-    int Gk = 0;
-
-
-    // init_distribution();
-    // init_cellGain();
-
+    // cout << "FM()" << endl;
     while(1){
         pass();
-        if(Gk>0){
-            reverseGain();
-            reverseDistr();
-            resetLocked();
-        }else break;
+        if(Gk<=0){
+            int moveTo = getBestMove();
+            for(int i = steps.size()-1; i>moveTo; i--){
+                cell* c = cellArray[steps[i]];
+                c->part = !c->part;
+            }
+            Gk = 0;
+            break;
+        }
     }
 }
 
@@ -524,7 +535,7 @@ int main(int argc, char *argv[]){
     init_partition();
     init_distribution();
 
-    // FM();
+    FM();
     
     // init_bucketList();
 
