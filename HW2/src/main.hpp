@@ -74,8 +74,9 @@ public:
     int Pmax, maxGain, cellNum;
     vector<list<cell*>> gainList;
     bucketList(int _Pmax){
-        Pmax = maxGain = _Pmax;
+        Pmax = _Pmax;
         int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
+        maxGain = bListLen - 1; // point to top of gain list
         gainList.resize(bListLen);
         cellNum = 0;
     }
@@ -84,17 +85,36 @@ public:
         int idx = gainValue + Pmax;
         gainList[idx].emplace_back(c);
         listCellIter it = prev(gainList[idx].end());
+        c->gain = gainValue;
         c->cellIt = it;
         cellNum++;
     }
-    void erase(listCell LC, listCellIter cit){
+    void erase(listCell &LC, listCellIter cit){
+        // cout << "before erase:";
+        // for(auto c: LC) cout << c->crid <<" ";
+
         LC.erase(cit);
         cellNum--;
+        // cout << "\nAfter erase:";
+        // for(auto c: LC) cout << c->crid <<" ";
+        // cout << endl;
     }
     int size(){
         return cellNum;
     }
     list<cell*> &getMaxGainList(int validMaxGainA){
         return gainList[validMaxGainA];
+    }
+    void show(char die){
+        cout << "In bucketlist " << die <<endl;
+        cout << "Pmax: " << Pmax << endl;
+        cout << "maxGain: " << maxGain <<" (index)" << endl;
+        for(int i = 0; i<gainList.size(); i++){
+            cout << "Gain "<< i-Pmax << ": "<<endl;
+            for(auto c: gainList[i]){
+                cout << c->crid <<((c != (gainList[i].back()))?" ":"\n");
+            }
+        }
+        cout << endl << endl;
     }
 };
