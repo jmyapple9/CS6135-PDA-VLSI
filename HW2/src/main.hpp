@@ -49,9 +49,11 @@ public:
     bool part; // partition A(true) or B(false)
     int gain;
     int crid; // just for debug (cell real id)
+    int cvid;
     list<cell*>::iterator cellIt;
-    cell(int _lib){
+    cell(int _lib, int _cvid){
         lib = _lib;
+        cvid = _cvid;
         lock = false;
         gain = 0;
     }

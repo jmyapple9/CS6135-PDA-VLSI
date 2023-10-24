@@ -9,7 +9,7 @@ bucketList *bListA, *bListB;
 vector<pair<int, int>> techA, techB; // pair<w,t>
 vector<cell *> cellArray;
 vector<net *> netArray;
-vector<int> steps; // cell vir id
+vector<pair<int,int>> steps; // first:cell gain, second: cell vir id
 // vector<cell *> freeCellList; // after the pass, just put item back to bListA, bListB. Accroding to their new gains.
 die Die;
 
@@ -70,7 +70,7 @@ void check(){
     }
 }
 
-void libcellParser()
+void libParser()
 {
     istringstream iss;
     string line, s1, s2, s3;
@@ -129,13 +129,11 @@ void DieInfoParser()
     iss >> s1 >> s2 >> t1;
     Die.techB = s2[1];
     utilB = t1 / 100.;
-
+    // cout << "utilA: " << utilA << endl;
+    // cout << "utilB: " << utilB << endl;
     Die.size = (Die.w * Die.h);
     Die.availA = Die.size * utilA;
     Die.availB = Die.size * utilB;
-    // cout << "Die.size: " << Die.size <<endl;
-    // cout << "DieA available: " << Die.availA <<endl;
-    // cout << "DieB available: " << Die.availB <<endl;
 
 }
 
@@ -156,7 +154,7 @@ void cellParser()
         iss >> s1 >> s2 >> s3;
         LibRealId = stoi(s3.substr(2));
         LibVirId = lib_R_V[LibRealId];
-        cellArray.emplace_back(new cell(LibVirId));
+        cellArray.emplace_back(new cell(LibVirId, cellVirId));
 
         cellRealId = stoi(s2.substr(1));
         cell_R_V[cellRealId] = cellVirId;
@@ -214,7 +212,7 @@ void parser(string testcasePath){
         exit(1);
     }
 
-    libcellParser();
+    libParser();
     DieInfoParser();
     cellParser();
     netParser();
@@ -239,19 +237,20 @@ void output(string outputPath){
         else setB.emplace_back(c);
     }
 
-    outputfile << "CutSize " << cutsize << endl;
-    outputfile << "DieA " << setA.size()<<endl;
+    outputfile << "CutSize " << cutsize << '\n';
+    outputfile << "DieA " << setA.size()<<'\n';
     for(auto c: setA)
-        outputfile << "C" << c->crid << endl;
+        outputfile << "C" << c->crid << '\n';
 
-    outputfile << "DieB " << setB.size()<<endl;
+    outputfile << "DieB " << setB.size()<<'\n';
     for(auto c: setB)
-        outputfile << "C" << c->crid << endl;
-
+        outputfile << "C" << c->crid << '\n';
+    
+    outputfile.flush();
     outputfile.close();
 }
 
-bool tryPutOn(int cellLibId, bool onDie)
+bool tryPutOn(int cellLibId, bool onDie, int swap)
 {   
     // cout << "try put on " << (onDie?"A":"B")<< endl;
     pair<int, int> cellShapeInLib = (onDie==true) ? techA[cellLibId] : techB[cellLibId];
@@ -262,6 +261,7 @@ bool tryPutOn(int cellLibId, bool onDie)
     if (onDie == true){
         if ((Die.Aarea + area) < Die.availA){
             Die.Aarea += area;
+            if(swap) Die.Barea -= area;
             // cout << "A is avail !!!" << endl;
             return true;
         }
@@ -273,6 +273,7 @@ bool tryPutOn(int cellLibId, bool onDie)
     else if (onDie == false){
         if ((Die.Barea + area) < Die.availB){
             Die.Barea += area;
+            if(swap) Die.Aarea -= area;
             // cout << "B is avail !!!" << endl;
             return true;
         }
@@ -293,15 +294,15 @@ void init_partition()
     vector<pair<int, int>> Diff;
 
     for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
-        int lib = cellArray[cellVirId]->lib;
-        int areaA = techA[lib].first * techA[lib].second;
-        int areaB = techB[lib].first * techB[lib].second;
+        // int lib = cellArray[cellVirId]->lib;
         int cellLibId = cellArray[cellVirId]->lib;
+        int sizeOnA = techA[cellLibId].first * techA[cellLibId].second;
+        int sizeOnB = techB[cellLibId].first * techB[cellLibId].second;
 
-        if (areaA <= areaB){ // can't delete this line  !!!
-            if (tryPutOn(cellLibId, true))
+        if (sizeOnA <= sizeOnB){ // can't delete this line  !!!
+            if (tryPutOn(cellLibId, true, 0))
                 cellArray[cellVirId]->part = true;
-            else if (tryPutOn(cellLibId, false))
+            else if (tryPutOn(cellLibId, false, 0))
                 cellArray[cellVirId]->part = false;
             else{
                 cout << "Invalid initial partition!" << endl;
@@ -310,9 +311,9 @@ void init_partition()
             }
         }
         else{ // can't delete this line  !!!
-            if (tryPutOn(cellLibId, false))
+            if (tryPutOn(cellLibId, false, 0))
                 cellArray[cellVirId]->part = false;
-            else if (tryPutOn(cellLibId, true))
+            else if (tryPutOn(cellLibId, true, 0))
                 cellArray[cellVirId]->part = true;
             else{
                 cout << "Invalid initial partition!" << endl;
@@ -401,15 +402,12 @@ cell* maxGainCell(){
     int validMaxGainB = bListA->maxGain;
     while(bListA->size() > 0 or bListB->size() > 0){
         // cout << "validMaxGainA: " << validMaxGainA << ", " << "validMaxGainB: " << validMaxGainB << endl;
-        if(validMaxGainA >= validMaxGainB){
+        if(validMaxGainA >= validMaxGainB){ // put cell from A to B
             if(validMaxGainA == -1) break;
             listCell& lcA = bListA->getMaxGainList(validMaxGainA);
-            // cout << "validMaxGainA: " << validMaxGainA << endl;
             if(!lcA.empty()){
-                // cout << "lcA not empty" << endl;
                 for(listCellIter lcAit = lcA.begin(); lcAit != lcA.end(); ){
-                    if(tryPutOn((*lcAit)->lib, false)){
-                        // cout << "Sucessfully put cell " << cellNow->crid << " on A" <<endl; 
+                    if(tryPutOn((*lcAit)->lib, false, 1)){
                         listCellIter rm = lcAit;
                         cell* cellNow = *lcAit;
                         lcAit++; // !!! Don't put it back to for loop !!!
@@ -422,23 +420,17 @@ cell* maxGainCell(){
                     }
                 }
                 validMaxGainA--;
-                // cout << "validMaxGainA becomes "<< validMaxGainA<<endl;
-                // cout <<"Now, its empty" << endl;
             }
             else{
                 validMaxGainA--;
-                // cout << "validMaxGainA becomes "<< validMaxGainA<<endl;
                 continue;
             }
-        }else{
+        }else{ // put cell from B to A
             if(validMaxGainB == -1) continue; // different from validMaxGainA: possibility: A=3, B=-1
             listCell& lcB = bListB->getMaxGainList(validMaxGainB);
-            // cout << "validMaxGainB: " << validMaxGainB << endl;
             if(!lcB.empty()){
-                // cout << "lcB not empty" << endl;
                 for(listCellIter lcBit = lcB.begin(); lcBit != lcB.end(); ){
-                    if(tryPutOn((*lcBit)->lib, false)){
-                        // cout << "Sucessfully put cell " << cellNow->crid << " on B" <<endl; 
+                    if(tryPutOn((*lcBit)->lib, true, 1)){
                         listCellIter rm = lcBit;
                         cell* cellNow = *lcBit;
                         lcBit++; // !!! Don't put it back to for loop !!!
@@ -451,12 +443,9 @@ cell* maxGainCell(){
                     }
                 }
                 validMaxGainB--;
-                // cout << "validMaxGainB becomes "<< validMaxGainB<<endl;
-                // cout <<"Now, its empty" << endl;
             }
             else{
                 validMaxGainB--;
-                // cout << "validMaxGainB becomes "<< validMaxGainB<<endl;
                 continue;
             }
         }
@@ -525,22 +514,25 @@ void updateGain(cell* baseCell){
 
 void pass(){
     // cout << "pass()" << endl;
+    Gk = 0;
 
     cell* baseCell;
     init_distribution();
     init_cellGain();
     while(baseCell = maxGainCell()){
         // cout << baseCell->gain << " ";
+
         // cout << "Enter pass's while loop" << endl;
         Gk += baseCell->gain;
         // cout << "Gk: " << Gk << endl;
-        steps.emplace_back(baseCell->gain);
+        steps.emplace_back(make_pair(baseCell->gain, baseCell->cvid));
         // cout << "update gain" << endl;
         updateGain(baseCell);
         // cout << "Done update gain" << endl;
     }
     // cout << endl;
     // cout << "End pass()" << endl;
+    cout << "Gk: " << Gk << endl;
     
 
 }
@@ -548,12 +540,12 @@ void pass(){
 int getBestMove(){
     int k = steps.size();
     int prefix[k] = {0};
-    prefix[0] = steps[0];
+    prefix[0] = steps[0].first;
     for(int i = 1; i < k; i++){
-        prefix[i] = prefix[i-1] + steps[i];
+        prefix[i] = prefix[i-1] + steps[i].first;
     }
     
-    int bestSeqIdx=0, m = -1;
+    int bestSeqIdx=-1, m = -1;
     for(int i = 0; i < k; i++){
         if(m < prefix[i]) {
             bestSeqIdx = i;
@@ -563,24 +555,33 @@ int getBestMove(){
     // cout << "Gain seq: ";
     // for(int i = 0; i<k; i++) cout << steps[i] << " ";
     // cout << "\nreturn best move index " << bestSeqIdx << endl;
-    return m;
+    return bestSeqIdx;
 }
 
 void FM(){
     // cout << "FM()" << endl;
     while(1){
         pass();
-        cout << "Gk: " << Gk << endl;
         int moveTo = getBestMove();
-        for(int i = steps.size()-1; i>moveTo; i--){
-            cell* c = cellArray[steps[i]];
-            c->part = !c->part;
-        }
-        Gk = 0;
-        steps = {};
-        if(Gk<=0){
+
+        if(moveTo == -1 or Gk < 0){
+            cout << "Finishing FM..." << endl;
+            for(auto p: steps){
+                cell* c = cellArray[p.second];
+                c->part = !c->part;
+            }
+            init_distribution();
             break;
         }
+
+        cout << "moveTo: " << moveTo << endl;
+        for(int i = steps.size()-1; i>moveTo; i--){
+            cell* c = cellArray[steps[i].second];
+            c->part = !c->part;
+        }
+        steps = {};
+        // if(Gk<=0) break;
+        
     }
 }
 
@@ -594,8 +595,6 @@ int main(int argc, char *argv[]){
     // init_distribution();
 
     FM();
-    // cout << "output file!!"<<endl;
-    // init_bucketList();
 
     output(outputPath);
 
