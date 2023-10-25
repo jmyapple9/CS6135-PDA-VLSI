@@ -20,14 +20,15 @@ useful regular expression to find "Net NX Y", where X, Y are numbers: Net N[\d]+
  */
 
 class die;
-class cell;
-class net;
+class Cell;
+class Net;
+class Die;
 
-typedef std::vector<std::list<cell*>>::iterator bListIterator;
-typedef list<cell*>::iterator listCellIter;
-typedef list<cell*> listCell;
+typedef std::vector<std::list<Cell*>>::iterator bListIterator;
+typedef list<Cell*>::iterator listCellIter;
+typedef list<Cell*> listCell;
 
-class die{
+class Die{
 public:
     long long w, h;
     // double utilA, utilB;
@@ -35,23 +36,23 @@ public:
     long long size;
     long long Aarea, Barea;
     char techA, techB;
-    die(){
+    Die(){
         Aarea = Barea = 0;
     }
 };
 
-class cell{
+class Cell{
 public:
-    list<net*> nets;
+    list<Net*> nets;
     // cellNum* c;
-    int lib; // cell libarary virtual id
+    int lib; // Cell libarary virtual id
     bool lock; // true=locked, false=unlock
     bool part; // partition A(true) or B(false)
     int gain;
-    int crid; // just for debug (cell real id)
+    int crid; // just for debug (Cell real id)
     int cvid;
-    list<cell*>::iterator cellIt;
-    cell(int _lib, int _cvid){
+    list<Cell*>::iterator cellIt;
+    Cell(int _lib, int _cvid){
         lib = _lib;
         cvid = _cvid;
         lock = false;
@@ -60,22 +61,22 @@ public:
 };
 
 
-class net{
+class Net{
 public:
-    list<cell*> cells;
+    list<Cell*> cells;
     int numCells; // May be redundant: can be get by cells.size()
-    int nrid; // net real id
-    pair<int,int> distr; // for net i, # of cell in partition A or B:<A(i), B(i)>
-    net(int _numCells){
+    int nrid; // Net real id
+    pair<int,int> distr; // for Net i, # of Cell in partition A or B:<A(i), B(i)>
+    Net(int _numCells){
         numCells = _numCells;
     }
 };
 
-class bucketList{
+class BucketList{
 public:
     int Pmax, maxGain, cellNum;
-    vector<list<cell*>> gainList;
-    bucketList(int _Pmax){
+    vector<list<Cell*>> gainList;
+    BucketList(int _Pmax){
         Pmax = _Pmax;
         int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
         maxGain = bListLen - 1; // point to top of gain list
@@ -83,32 +84,27 @@ public:
         cellNum = 0;
     }
 
-    void insert(int gainValue, cell* c){
+    void insert(int gainValue, Cell* c){
         int idx = gainValue + Pmax;
         gainList[idx].emplace_back(c);
+        // cout << "inserting" << endl;
         listCellIter it = prev(gainList[idx].end());
         c->gain = gainValue;
         c->cellIt = it;
         cellNum++;
     }
     void erase(listCell &LC, listCellIter cit){
-        // cout << "before erase:";
-        // for(auto c: LC) cout << c->crid <<" ";
-
         LC.erase(cit);
         cellNum--;
-        // cout << "\nAfter erase:";
-        // for(auto c: LC) cout << c->crid <<" ";
-        // cout << endl;
     }
     int size(){
         return cellNum;
     }
-    list<cell*> &getMaxGainList(int validMaxGainA){
+    list<Cell*> &getMaxGainList(int validMaxGainA){
         return gainList[validMaxGainA];
     }
-    void show(char die){
-        cout << "In bucketlist " << die <<endl;
+    void show(bool die){
+        cout << "In Bucketlist " << (die?'A':'B') <<endl;
         cout << "Pmax: " << Pmax << endl;
         cout << "maxGain: " << maxGain <<" (index)" << endl;
         for(int i = 0; i<gainList.size(); i++){
@@ -118,5 +114,11 @@ public:
             }
         }
         cout << endl << endl;
+    }
+    void clear(){
+        for(auto L: gainList){
+            L = list<Cell*>();
+        }
+        cellNum = 0;
     }
 };

@@ -5,19 +5,19 @@ bool TIME = false;
 
 // Global data structures
 ifstream in_file;
-bucketList *bListA, *bListB;
+BucketList *bListA, *bListB;
 vector<pair<int, int>> techA, techB; // pair<w,t>
-vector<cell *> cellArray;
-vector<net *> netArray;
-vector<pair<int,int>> steps; // first:cell gain, second: cell vir id
-// vector<cell *> freeCellList; // after the pass, just put item back to bListA, bListB. Accroding to their new gains.
-die Die;
+vector<Cell *> cellArray;
+vector<Net *> netArray;
+vector<pair<int,int>> steps; // first:Cell gain, second: Cell vir id
+// vector<Cell *> freeCellList; // after the pass, just put item back to bListA, bListB. Accroding to their new gains.
+Die die;
 
 // GLobal statistics
 int NumTechs;
 int pmax;
 int cutsize;
-int Gk;
+// int Gk;
 // Mapping table are used to prevent index mismapping of: Libcell, Cell, and Net
 // R is the real id in name(eg. MC3, C8, N5)
 // V is the virtual id = the position of node in array(techA, techB, cellArray, netArray)
@@ -52,17 +52,17 @@ void check(){
             cout << "MC" << lib_V_R[i] << ": " << techB[i].first << ", " << techB[i].second << endl;
     }
 
-    cout << "checking net Array:" << endl;
+    cout << "checking Net Array:" << endl;
     for (int i = 0; i < netArray.size(); i++){
-        cout << "In net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
+        cout << "In Net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
         for (auto c : netArray[i]->cells)
             cout << c->crid << " ";
 
         cout << endl;
     }
-    cout << "\nchecking cell Array:" << endl;
+    cout << "\nchecking Cell Array:" << endl;
     for (int i = 0; i < cellArray.size(); i++){
-        cout << "In cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
+        cout << "In Cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
         for (auto n : cellArray[i]->nets)
             cout << n->nrid << " ";
         
@@ -116,24 +116,24 @@ void DieInfoParser()
     // eat newline
     getline(in_file, line);
 
-    // Die info
+    // die info
     getIss(iss, line);
-    iss >> s1 >> Die.w >> Die.h;
+    iss >> s1 >> die.w >> die.h;
 
     getIss(iss, line);
     iss >> s1 >> s2 >> t1;
-    Die.techA = s2[1];
+    die.techA = s2[1];
     utilA = t1 / 100.;
 
     getIss(iss, line);
     iss >> s1 >> s2 >> t1;
-    Die.techB = s2[1];
+    die.techB = s2[1];
     utilB = t1 / 100.;
     // cout << "utilA: " << utilA << endl;
     // cout << "utilB: " << utilB << endl;
-    Die.size = (Die.w * Die.h);
-    Die.availA = Die.size * utilA;
-    Die.availB = Die.size * utilB;
+    die.size = (die.w * die.h);
+    die.availA = die.size * utilA;
+    die.availB = die.size * utilB;
 
 }
 
@@ -146,7 +146,7 @@ void cellParser()
     // eat newline
     getline(in_file, line);
 
-    // build cell array
+    // build Cell array
     getIss(iss, line);
     iss >> s1 >> cellCount;
     for (int cellVirId = 0; cellVirId < cellCount; cellVirId++){
@@ -154,7 +154,7 @@ void cellParser()
         iss >> s1 >> s2 >> s3;
         LibRealId = stoi(s3.substr(2));
         LibVirId = lib_R_V[LibRealId];
-        cellArray.emplace_back(new cell(LibVirId, cellVirId));
+        cellArray.emplace_back(new Cell(LibVirId, cellVirId));
 
         cellRealId = stoi(s2.substr(1));
         cell_R_V[cellRealId] = cellVirId;
@@ -179,7 +179,7 @@ void netParser()
         iss >> s1 >> s2 >> cellCount;
         netRealId = stoi(s2.substr(1));
 
-        net *n = new net(cellCount);
+        Net *n = new Net(cellCount);
         netArray.emplace_back(n);
         net_R_V[netRealId] = netVirId;
         net_V_R[netVirId] = netRealId;
@@ -192,7 +192,7 @@ void netParser()
             int cellVirId = cell_R_V[cellRealId];
             n->cells.push_back(cellArray[cellVirId]);
             // Also build cellArray
-            list<net*>& nets = cellArray[cellVirId]->nets;
+            list<Net*>& nets = cellArray[cellVirId]->nets;
             nets.push_back(n);
             int numP = nets.size();
             pmax = max(pmax, numP);
@@ -227,11 +227,11 @@ void parser(string testcasePath){
 
 void output(string outputPath){
     // !!! MUST REMEMBER !!!
-    // !!! Use cell_V_R map virtual cell id to real cell id !!!
+    // !!! Use cell_V_R map virtual Cell id to real Cell id !!!
     ofstream outputfile;
     outputfile.open(outputPath);
 
-    vector<cell*> setA, setB;
+    vector<Cell*> setA, setB;
     for(auto c:cellArray){
         if(c->part==true) setA.emplace_back(c);
         else setB.emplace_back(c);
@@ -255,13 +255,13 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
     // cout << "try put on " << (onDie?"A":"B")<< endl;
     pair<int, int> cellShapeInLib = (onDie==true) ? techA[cellLibId] : techB[cellLibId];
     long long area = static_cast<long long>(cellShapeInLib.first * cellShapeInLib.second);
-    // cout << "area: " << area << ", " << "availA: " << Die.availA << ", " << "availB: " << Die.availB << endl;
-    // cout << "area: " << area << ", " << "availA: " << Die.availA - Die.Aarea << ", " << "availB: " << Die.availB - Die.Barea << endl;
+    // cout << "area: " << area << ", " << "availA: " << die.availA << ", " << "availB: " << die.availB << endl;
+    // cout << "area: " << area << ", " << "availA: " << die.availA - die.Aarea << ", " << "availB: " << die.availB - die.Barea << endl;
 
     if (onDie == true){
-        if ((Die.Aarea + area) < Die.availA){
-            Die.Aarea += area;
-            if(swap) Die.Barea -= area;
+        if ((die.Aarea + area) < die.availA){
+            die.Aarea += area;
+            if(swap) die.Barea -= area;
             // cout << "A is avail !!!" << endl;
             return true;
         }
@@ -271,9 +271,9 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
         }
     }
     else if (onDie == false){
-        if ((Die.Barea + area) < Die.availB){
-            Die.Barea += area;
-            if(swap) Die.Aarea -= area;
+        if ((die.Barea + area) < die.availB){
+            die.Barea += area;
+            if(swap) die.Aarea -= area;
             // cout << "B is avail !!!" << endl;
             return true;
         }
@@ -283,7 +283,7 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
         }
     }
     else{
-        cout << "Unknown die: " << onDie << endl;
+        cout << "Unknown Die: " << onDie << endl;
         return false;
     }
 }
@@ -326,10 +326,10 @@ void init_partition()
     // myfile.open ("output.txt");
     // int i = 0;
     // for(auto c:cellArray)
-    //     cout << "cell " << ++i << " in " << c->part <<endl;
+    //     cout << "Cell " << ++i << " in " << c->part <<endl;
     // myfile.close();
-    bListA = new bucketList(pmax);
-    bListB = new bucketList(pmax);
+    bListA = new BucketList(pmax);
+    bListB = new BucketList(pmax);
 
     if (TIME)
         printf("Initial partition Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
@@ -341,12 +341,7 @@ void init_distribution()
     for (auto n : netArray){
         int Ai = 0, Bi = 0;
         for (auto c : n->cells){
-            if (c->part == true)
-                Ai++;
-            else if (c->part == false)
-                Bi++;
-            else
-                cout << "Error! cell isn't in neither part A or B!" << endl;
+            (c->part == true) ? Ai++ : Bi++;
         }
         n->distr.first = Ai;
         n->distr.second = Bi;
@@ -357,18 +352,19 @@ void init_distribution()
     cout << "cutsize: " << cutsize << endl;
 
     // for(int i = 0; i < netArray.size(); i++){
-    //     cout << "net " << i+1 << " has "<<netArray[i]->cells.size() << " cells: "\
+    //     cout << "Net " << i+1 << " has "<<netArray[i]->cells.size() << " cells: "\
     //     << netArray[i]->distr.first << ", "<<netArray[i]->distr.second<<endl;
     // }
 }
 
 void init_cellGain()
 {
+    // cout << "init_cellGain()" << endl;
     for (auto c : cellArray){
         int gain = 0;
         for (auto n : c->nets){
             int F, T;
-            // net* n = netArray[netVirId];
+            // Net* n = netArray[netVirId];
             if (c->part == true)
                 F = n->distr.first, T = n->distr.second;
             else
@@ -383,17 +379,19 @@ void init_cellGain()
             bListA->insert(gain, c);
         else
             bListB->insert(gain, c);
-        
-        // cout << "cell " << c->crid <<": " << c->gain << endl;
+        // cout << "Done insertion!!" <<endl;
+        // cout << "Cell " << c->crid <<": " << c->gain << endl;
     }
+    // cout << "Leaving init_cellGain..." << endl;
+
 }
 
 /* 
-return: the cell with larger cell gain among bListA, bListB.
-If this cell is valid to move(under area constraint of dieA, dieB)
-erase it from bucket list, and put it into free cell list(locked cell)
+return: the Cell with larger Cell gain among bListA, bListB.
+If this Cell is valid to move(under area constraint of dieA, dieB)
+erase it from bucket list, and put it into free Cell list(locked Cell)
  */
-cell* maxGainCell(){
+Cell* maxGainCell(){
     // cout << "maxGainCell()" << endl;
     // bListA->show('A');
     // bListB->show('B');
@@ -402,14 +400,14 @@ cell* maxGainCell(){
     int validMaxGainB = bListA->maxGain;
     while(bListA->size() > 0 or bListB->size() > 0){
         // cout << "validMaxGainA: " << validMaxGainA << ", " << "validMaxGainB: " << validMaxGainB << endl;
-        if(validMaxGainA >= validMaxGainB){ // put cell from A to B
+        if(validMaxGainA >= validMaxGainB){ // put Cell from A to B
             if(validMaxGainA == -1) break;
             listCell& lcA = bListA->getMaxGainList(validMaxGainA);
             if(!lcA.empty()){
                 for(listCellIter lcAit = lcA.begin(); lcAit != lcA.end(); ){
                     if(tryPutOn((*lcAit)->lib, false, 1)){
                         listCellIter rm = lcAit;
-                        cell* cellNow = *lcAit;
+                        Cell* cellNow = *lcAit;
                         lcAit++; // !!! Don't put it back to for loop !!!
                         bListA->erase(lcA, rm);
                         return cellNow;
@@ -425,14 +423,14 @@ cell* maxGainCell(){
                 validMaxGainA--;
                 continue;
             }
-        }else{ // put cell from B to A
+        }else{ // put Cell from B to A
             if(validMaxGainB == -1) continue; // different from validMaxGainA: possibility: A=3, B=-1
             listCell& lcB = bListB->getMaxGainList(validMaxGainB);
             if(!lcB.empty()){
                 for(listCellIter lcBit = lcB.begin(); lcBit != lcB.end(); ){
                     if(tryPutOn((*lcBit)->lib, true, 1)){
                         listCellIter rm = lcBit;
-                        cell* cellNow = *lcBit;
+                        Cell* cellNow = *lcBit;
                         lcBit++; // !!! Don't put it back to for loop !!!
                         bListB->erase(lcB, rm);
                         return cellNow;
@@ -458,9 +456,9 @@ cell* maxGainCell(){
 }
 
 /* 
-Move the base cell and update neighbor's gains
+Move the base Cell and update neighbor's gains
  */
-void updateGain(cell* baseCell){
+void updateGain(Cell* baseCell){
     for (auto n : baseCell->nets){
         baseCell->lock = true;
         int F, T;
@@ -470,22 +468,23 @@ void updateGain(cell* baseCell){
             F = n->distr.second, T = n->distr.first;
         
         int cnt = 0;
-        cell* leftedOne;
+        Cell* leftedOne;
         /* before move */
         if(T==0) {
             for(auto c: n->cells){
                 if(!c->lock) c->gain++;
             }
-            // baseCell gain: original -1, now +1, should be ++ one more times
-            baseCell->gain += 1;
+            // baseCell gain: original -1, now +1, should be ++ one more times (should be meaningless: locked cell will not move in this pass)
+            // baseCell->gain += 1;
         }
         else if(T==1){
             for(auto c: n->cells){
-                if(baseCell->part != c->part and !c->lock and cnt < 2){
-                    cnt++, leftedOne = c;
+                if(baseCell->part != c->part and !c->lock){
+                    // cnt++, leftedOne = c;
+                    c->gain--;
                 }
             }
-            if(cnt==1) leftedOne->gain--;
+            // if(cnt==1) leftedOne->gain--;
         }
         /* Move */
         F--, T++;
@@ -496,15 +495,16 @@ void updateGain(cell* baseCell){
             for(auto c: n->cells){
                 if(!c->lock) c->gain--; 
             }
-            // baseCell gain: original +1, now -1, should be -- one more times
-            baseCell->gain -= 1;
+            // baseCell gain: original +1, now -1, should be -- one more times (should be meaningless: locked cell will not move in this pass)
+            // baseCell->gain -= 1;
         }
         else if(F==1){
             for(auto c: n->cells){
-                if(baseCell->part != c->part and !c->lock and cnt < 2){
-                    cnt++, leftedOne = c;
+                if(baseCell->part != c->part and !c->lock){
+                    c->gain++;
+                    // cnt++, leftedOne = c;
                 }
-                if(cnt == 1) leftedOne->gain++;
+                // if(cnt == 1) leftedOne->gain++;
             }
         }
 
@@ -514,60 +514,62 @@ void updateGain(cell* baseCell){
 
 void pass(){
     // cout << "pass()" << endl;
-    Gk = 0;
+    // Gk = 0;
 
-    cell* baseCell;
+    Cell* baseCell;
     init_distribution();
     init_cellGain();
     while(baseCell = maxGainCell()){
         // cout << baseCell->gain << " ";
 
         // cout << "Enter pass's while loop" << endl;
-        Gk += baseCell->gain;
-        // cout << "Gk: " << Gk << endl;
+        // Gk += baseCell->gain;
         steps.emplace_back(make_pair(baseCell->gain, baseCell->cvid));
         // cout << "update gain" << endl;
         updateGain(baseCell);
         // cout << "Done update gain" << endl;
     }
+    // cout << "Leaving pass..." << endl;
     // cout << endl;
     // cout << "End pass()" << endl;
-    cout << "Gk: " << Gk << endl;
     
 
 }
 
-int getBestMove(){
+pair<int,int> getBestMove(){
+    int Gk = 0;
     int k = steps.size();
     int prefix[k] = {0};
     prefix[0] = steps[0].first;
     for(int i = 1; i < k; i++){
         prefix[i] = prefix[i-1] + steps[i].first;
     }
-    
-    int bestSeqIdx=-1, m = -1;
+
+    int bestSeqIdx=-1;
+    Gk = prefix[0];
     for(int i = 0; i < k; i++){
-        if(m < prefix[i]) {
+        if(Gk < prefix[i]) {
             bestSeqIdx = i;
-            m = prefix[i];
+            Gk = prefix[i];
         }
     }
     // cout << "Gain seq: ";
     // for(int i = 0; i<k; i++) cout << steps[i] << " ";
     // cout << "\nreturn best move index " << bestSeqIdx << endl;
-    return bestSeqIdx;
+    // cout << "Gk: " << Gk << endl;
+    return {bestSeqIdx, Gk};
 }
 
 void FM(){
     // cout << "FM()" << endl;
     while(1){
         pass();
-        int moveTo = getBestMove();
-
-        if(moveTo == -1 or Gk < 0){
+        auto [moveTo, Gk] = getBestMove();
+        cout << "moveTo: " << moveTo << ", " << "Gk: " << Gk << endl;
+        if(moveTo == -1 or Gk <= 0){
             cout << "Finishing FM..." << endl;
             for(auto p: steps){
-                cell* c = cellArray[p.second];
+                Cell* c = cellArray[p.second];
                 c->part = !c->part;
             }
             init_distribution();
@@ -576,11 +578,17 @@ void FM(){
 
         cout << "moveTo: " << moveTo << endl;
         for(int i = steps.size()-1; i>moveTo; i--){
-            cell* c = cellArray[steps[i].second];
+            Cell* c = cellArray[steps[i].second];
             c->part = !c->part;
         }
+        
         steps = {};
-        // if(Gk<=0) break;
+        bListA->clear();
+        bListB->clear();
+
+        for(Cell* c: cellArray) {
+            c->lock = false; // unlock all cells
+        }
         
     }
 }
