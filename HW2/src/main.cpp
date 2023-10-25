@@ -539,7 +539,9 @@ void pass(){
 pair<int,int> getBestMove(){
     int Gk = 0;
     int k = steps.size();
-    int prefix[k] = {0};
+    // int prefix[k];
+    // fill(prefix.begin(), prefix.end(), 0);
+    vector<int> prefix(k, 10);
     prefix[0] = steps[0].first;
     for(int i = 1; i < k; i++){
         prefix[i] = prefix[i-1] + steps[i].first;
@@ -565,7 +567,7 @@ void FM(){
     while(1){
         pass();
         auto [moveTo, Gk] = getBestMove();
-        cout << "moveTo: " << moveTo << ", " << "Gk: " << Gk << endl;
+        // cout << "moveTo: " << moveTo << ", " << "Gk: " << Gk << endl;
         if(moveTo == -1 or Gk <= 0){
             cout << "Finishing FM..." << endl;
             for(auto p: steps){
@@ -576,7 +578,6 @@ void FM(){
             break;
         }
 
-        cout << "moveTo: " << moveTo << endl;
         for(int i = steps.size()-1; i>moveTo; i--){
             Cell* c = cellArray[steps[i].second];
             c->part = !c->part;
