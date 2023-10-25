@@ -249,7 +249,7 @@ void output(string outputPath){
     outputfile.close();
 }
 
-bool tryPutOn(int cellLibId, bool onDie, int swap)
+bool tryPutOn(int cellLibId, bool onDie, int move)
 {   
     // cout << "try put on " << (onDie?"A":"B")<< endl;
     pair<int, int> cellShapeInLib = (onDie==true) ? techA[cellLibId] : techB[cellLibId];
@@ -260,7 +260,7 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
     if (onDie == true){
         if ((die.Aarea + area) < die.availA){
             die.Aarea += area;
-            if(swap) die.Barea -= area;
+            if(move) die.Barea -= area;
             // cout << "A is avail !!!" << endl;
             return true;
         }
@@ -269,10 +269,10 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
             return false;
         }
     }
-    else if (onDie == false){
+    else{
         if ((die.Barea + area) < die.availB){
             die.Barea += area;
-            if(swap) die.Aarea -= area;
+            if(move) die.Aarea -= area;
             // cout << "B is avail !!!" << endl;
             return true;
         }
@@ -280,10 +280,6 @@ bool tryPutOn(int cellLibId, bool onDie, int swap)
             // cout << "B not avail !!!" << endl;
             return false;
         }
-    }
-    else{
-        cout << "Unknown Die: " << onDie << endl;
-        return false;
     }
 }
 
@@ -402,7 +398,7 @@ Cell* maxGainCell(){
     // listCellIter it;
     int validMaxGainA = bListA->maxGain;
     int validMaxGainB = bListB->maxGain;
-    while(bListA->size() > 0 or bListB->size() > 0){
+    while( !(validMaxGainA == -1 and validMaxGainB == -1) ){
         // cout << "validMaxGainA: " << validMaxGainA << ", " << "validMaxGainB: " << validMaxGainB << endl;
         if(validMaxGainA >= validMaxGainB){ // put Cell from A to B
             if(validMaxGainA == -1) break;
@@ -465,9 +461,10 @@ Move the base Cell and update neighbor's gains
 void updateGain(Cell* baseCell){
     bool originPart = baseCell->part;
     baseCell->part = !baseCell->part;
+    baseCell->lock = true;
     if(0) cout << "Turn cell " << baseCell->crid << " to " << (baseCell->part?"A":"B")<<endl;
+
     for (auto n : baseCell->nets){
-        baseCell->lock = true;
         int F, T;
         if(originPart==true)
             F = n->distr.first, T = n->distr.second;
