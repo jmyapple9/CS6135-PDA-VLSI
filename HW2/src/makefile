@@ -1,4 +1,4 @@
-CXXFLAGS = -O3 -std=c++17
+CXXFLAGS = -O3 -std=c++17 # -Wall -Wextra
 LIBS = -I /usr/local/include/boost/
 # LIBS_ON_LAPTOP = -I "C:\Users\jmyap\boost_1_83_0"
 OUTPUT_DIR = ../bin/
