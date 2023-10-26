@@ -1,0 +1,580 @@
+g++ -O3 -std=c++17  main.cpp -o ../bin/hw2
+../bin/hw2 ../testcase/sample.txt ../output/sample.out
+Intial partition area: 
+die.Aarea: 898, die.Barea: 429
+cutsize: 3
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+8
+Gain 2: 
+6
+Gain 3: 
+
+
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+8
+Gain 2: 
+6
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+1 2 3 4 5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 1 from A to B
+die.Aarea: 828, die.Barea: 534
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+8
+Gain 2: 
+6
+Gain 3: 
+
+
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+8
+Gain 2: 
+6
+Gain 3: 
+
+
+after move cell 8 from B to A
+die.Aarea: 898, die.Barea: 429
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+6
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+2 3 4 5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 2 from A to B
+die.Aarea: 694, die.Barea: 753
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+6
+Gain 3: 
+
+
+after move cell 6 from B to A
+die.Aarea: 898, die.Barea: 429
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+3 4 5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 3 from A to B
+die.Aarea: 694, die.Barea: 753
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+4 5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 4 from A to B
+die.Aarea: 554, die.Barea: 933
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+5 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+moveTo: 3, Gk: 1
+reverting...die.Aarea: 694, die.Barea: 753
+reverting...die.Aarea: 898, die.Barea: 429
+----Reverted to ----
+die.Aarea: 898, die.Barea: 429
+Util A: 0.748333, Util B: 0.3575
+cutsize: 2
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+5 7
+3 7
+Gain 0: 
+Gain 1: 
+8
+Gain 2: 
+Gain 3: 
+
+
+after move cell 8 from A to B
+die.Aarea: 828, die.Barea: 534
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+1
+Gain 0: 
+Gain 1: 
+2
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+5 7
+3 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 5 from A to B
+die.Aarea: 688, die.Barea: 714
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+1
+Gain 0: 
+Gain 1: 
+2
+Gain 2: 
+Gain 3: 
+
+
+after move cell 2 from B to A
+die.Aarea: 892, die.Barea: 390
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+7
+3 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 7 from A to B
+die.Aarea: 752, die.Barea: 570
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+3 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 3 from A to B
+die.Aarea: 548, die.Barea: 894
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 7 from B to A
+die.Aarea: 408, die.Barea: 1074
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+1
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 1 from B to A
+die.Aarea: 478, die.Barea: 969
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+moveTo: 0, Gk: 1
+reverting...die.Aarea: 408, die.Barea: 1074
+reverting...die.Aarea: 268, die.Barea: 1254
+reverting...die.Aarea: 472, die.Barea: 930
+reverting...die.Aarea: 612, die.Barea: 750
+reverting...die.Aarea: 408, die.Barea: 1074
+reverting...die.Aarea: 548, die.Barea: 894
+----Reverted to ----
+die.Aarea: 548, die.Barea: 894
+Util A: 0.456667, Util B: 0.745
+cutsize: 1
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+3 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+3 7
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 7 from A to B
+die.Aarea: 408, die.Barea: 1074
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+3
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+1 2 8
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 1 from B to A
+die.Aarea: 478, die.Barea: 969
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+3
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+2 8
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 2 from B to A
+die.Aarea: 682, die.Barea: 645
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+3
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 3 from A to B
+die.Aarea: 478, die.Barea: 969
+In Bucketlist B
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+Gain -1: 
+8
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 8 from B to A
+die.Aarea: 548, die.Barea: 864
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+4 5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+after move cell 4 from A to B
+die.Aarea: 408, die.Barea: 1044
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+In Bucketlist A
+Pmax: 3
+maxGain: 6 (index)
+Gain -3: 
+Gain -2: 
+5 6
+4 5 6
+Gain -1: 
+Gain 0: 
+Gain 1: 
+Gain 2: 
+Gain 3: 
+
+
+moveTo: 4, Gk: -1
+Finishing FM...
+----Reverted to ----
+die.Aarea: 548, die.Barea: 894
+Util A: 0.456667, Util B: 0.745
+../bin/verify ../testcase/sample.txt ../output/sample.out
+[Success] Your output file satisfies our basic requirements.

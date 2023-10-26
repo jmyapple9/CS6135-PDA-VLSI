@@ -263,11 +263,9 @@ bool tryPutOn(int cellLibId, bool toDie, int move)
         if ((die.Aarea + T_area) < die.availA){
             die.Aarea += T_area;
             if(move) die.Barea -= F_area;
-            // cout << "A is avail !!!" << endl;
             return true;
         }
         else{
-            // cout << "A not avail !!!" << endl;
             return false;
         }
     }
@@ -275,11 +273,9 @@ bool tryPutOn(int cellLibId, bool toDie, int move)
         if ((die.Barea + T_area) < die.availB){
             die.Barea += T_area;
             if(move) die.Aarea -= F_area;
-            // cout << "B is avail !!!" << endl;
             return true;
         }
         else{
-            // cout << "B not avail !!!" << endl;
             return false;
         }
     }
@@ -338,7 +334,7 @@ void init_distribution()
     for (auto n : netArray){
         int Ai = 0, Bi = 0;
         for (auto c : n->cells){
-            (c->part == true) ? Ai++ : Bi++;
+            (c->part) ? Ai++ : Bi++;
         }
         n->distr.first = Ai;
         n->distr.second = Bi;
@@ -456,11 +452,7 @@ Cell* maxGainCell(){
             }
         }
     }
-    // exit(1);
     return nullptr;
-    // for (bListIterator glA_It = bListA->gainList.begin(), glB_It = bListB->gainList.begin(); 
-    // glA_It != bListA->gainList.end() && glB_It != bListB->gainList.end();){
-    // }
 }
 
 /* 
@@ -539,6 +531,8 @@ void pass(){
     init_cellGain();
     while((baseCell = maxGainCell())){
         if(0) cout << "basecell: " << baseCell->crid << ", gain=" << baseCell->gain << endl;
+        // cout << "after move cell " << baseCell->crid << " from "<<  (baseCell->part?"A":"B") <<" to " << (!baseCell->part?"A":"B") << endl;
+        // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
 
         // cout << "Enter pass's while loop" << endl;
         // Gk += baseCell->gain;
@@ -582,27 +576,65 @@ pair<int,int> getBestMove(){
 
 void FM(){
     // cout << "FM()" << endl;
+    // cout << "Intial partition area: " << endl;
+    // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
+
     while(1){
         pass();
         auto [moveTo, Gk] = getBestMove();
-        // if(1) cout << "moveTo: " << moveTo << ", " << "Gk: " << Gk << endl;
+        if(0) cout << "moveTo: " << moveTo << ", " << "Gk: " << Gk << endl;
         if(moveTo == -1 or Gk <= 0){
             if(DEBUGMODE) cout << "Finishing FM..." << endl;
             for(auto p: steps){
                 Cell* c = cellArray[p.second];
                 c->part = !c->part;
+                if(c->part){ // now is A, before revert is B
+                    pair<int, int> cellShapeInLib_T = techA[c->lib];
+                    pair<int, int> cellShapeInLib_F = techB[c->lib];
+                    long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
+                    long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
+                    die.Aarea += T_area;
+                    die.Barea -= F_area;
+                }else{// now is B, before revert is A
+                    pair<int, int> cellShapeInLib_T = techB[c->lib];
+                    pair<int, int> cellShapeInLib_F = techA[c->lib];
+                    long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
+                    long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
+                    die.Barea += T_area;
+                    die.Aarea -= F_area;
+                }
             }
-            // init_distribution();
+
+            // cout << "----Reverted to ----"<<endl;
+            // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
+            // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
             break;
         }
 
         for(int i = steps.size()-1; i>moveTo; i--){
             Cell* c = cellArray[steps[i].second];
             c->part = !c->part;
-            // cout << 
+            int cellLibId = c->lib;
+            // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
+            pair<int, int> cellShapeInLib_T = (c->part) ? techA[cellLibId] : techB[cellLibId];
+            pair<int, int> cellShapeInLib_F = (c->part) ? techB[cellLibId] : techA[cellLibId];
+            long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
+            long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
+            if(c->part){
+                die.Aarea += T_area;
+                die.Barea -= F_area;
+            }else{
+                die.Barea += T_area;
+                die.Aarea -= F_area;
+            }
+            // cout << "reverting...die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
+
         }
-        
+        // cout << "----Reverted to ----"<<endl;
+        // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
+        // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
         steps = {};
+        // cout << "steps.size(): " << steps.size() << endl;
         bListA->clear();
         bListB->clear();
 

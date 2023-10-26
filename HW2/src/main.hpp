@@ -116,7 +116,7 @@ public:
         cout << endl << endl;
     }
     void clear(){
-        for(auto L: gainList){
+        for(auto &L: gainList){
             L = list<Cell*>();
         }
         cellNum = 0;

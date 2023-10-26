@@ -28,5 +28,10 @@ sample:
 	g++ $(CXXFLAGS) main.cpp -o $(OUTPUT_DIR)$(PROGRAM_NAME)
 	$(OUTPUT_DIR)$(PROGRAM_NAME) $(TESTCASE_DIR)sample.txt $(OUTPUT_DIR_PUBLIC)sample.out
 	$(OUTPUT_DIR)verify $(TESTCASE_DIR)sample.txt $(OUTPUT_DIR_PUBLIC)sample.out
+
+sample1:
+	g++ $(CXXFLAGS) main.cpp -o $(OUTPUT_DIR)$(PROGRAM_NAME)
+	$(OUTPUT_DIR)$(PROGRAM_NAME) $(TESTCASE_DIR)sample1.txt $(OUTPUT_DIR_PUBLIC)sample1.out
+	$(OUTPUT_DIR)verify $(TESTCASE_DIR)sample1.txt $(OUTPUT_DIR_PUBLIC)sample1.out
 %:
 	@:
