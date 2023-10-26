@@ -249,18 +249,20 @@ void output(string outputPath){
     outputfile.close();
 }
 
-bool tryPutOn(int cellLibId, bool onDie, int move)
+bool tryPutOn(int cellLibId, bool toDie, int move)
 {   
-    // cout << "try put on " << (onDie?"A":"B")<< endl;
-    pair<int, int> cellShapeInLib = (onDie==true) ? techA[cellLibId] : techB[cellLibId];
-    long long area = static_cast<long long>(cellShapeInLib.first * cellShapeInLib.second);
-    // cout << "area: " << area << ", " << "availA: " << die.availA << ", " << "availB: " << die.availB << endl;
-    // cout << "area: " << area << ", " << "availA: " << die.availA - die.Aarea << ", " << "availB: " << die.availB - die.Barea << endl;
+    // cout << "try put on " << (toDie?"A":"B")<< endl;
+    pair<int, int> cellShapeInLib_T = (toDie==true) ? techA[cellLibId] : techB[cellLibId];
+    pair<int, int> cellShapeInLib_F = (toDie==true) ? techB[cellLibId] : techA[cellLibId];
+    long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
+    long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
+    // cout << "T_area: " << T_area << ", " << "availA: " << die.availA << ", " << "availB: " << die.availB << endl;
+    // if(move) cout << "T_area: " << T_area << " ("<<cellShapeInLib_T.first << " "<<cellShapeInLib_T.second << "), " << "availA: " << die.availA - die.Aarea << ", " << "availB: " << die.availB - die.Barea << endl;
 
-    if (onDie == true){
-        if ((die.Aarea + area) < die.availA){
-            die.Aarea += area;
-            if(move) die.Barea -= area;
+    if (toDie == true){
+        if ((die.Aarea + T_area) < die.availA){
+            die.Aarea += T_area;
+            if(move) die.Barea -= F_area;
             // cout << "A is avail !!!" << endl;
             return true;
         }
@@ -270,9 +272,9 @@ bool tryPutOn(int cellLibId, bool onDie, int move)
         }
     }
     else{
-        if ((die.Barea + area) < die.availB){
-            die.Barea += area;
-            if(move) die.Aarea -= area;
+        if ((die.Barea + T_area) < die.availB){
+            die.Barea += T_area;
+            if(move) die.Aarea -= F_area;
             // cout << "B is avail !!!" << endl;
             return true;
         }
@@ -405,6 +407,7 @@ Cell* maxGainCell(){
             listCell& lcA = bListA->getMaxGainList(validMaxGainA--);
             if(!lcA.empty()){
                 for(listCellIter it = lcA.begin(); it != lcA.end(); ){
+                    // bListA->show(true);
                     if(tryPutOn((*it)->lib, false, 1)){
                         listCellIter rm = it;
                         Cell* cellNow = *it;
@@ -413,11 +416,13 @@ Cell* maxGainCell(){
                         return cellNow;
                     }
                     else {
+                        // cout << "Didn't put, violate constraint on B" << endl;
                         it++; // !!! Don't put it back to for loop !!!
                         continue;
                     }
                 }
                 // validMaxGainA--;
+                // cout << "bListA has empty list in gain " << validMaxGainA+1 << endl;
             }
             else{
                 // validMaxGainA--;
@@ -428,6 +433,7 @@ Cell* maxGainCell(){
             listCell& lcB = bListB->getMaxGainList(validMaxGainB--);
             if(!lcB.empty()){
                 for(listCellIter it = lcB.begin(); it != lcB.end(); ){
+                    // bListB->show(false);
                     if(tryPutOn((*it)->lib, true, 1)){
                         listCellIter rm = it;
                         Cell* cellNow = *it;
@@ -436,11 +442,13 @@ Cell* maxGainCell(){
                         return cellNow;
                     }
                     else {
+                        // cout << "Didn't put, violate constraint on A" << endl;
                         it++; // !!! Don't put it back to for loop !!!
                         continue;
                     }
                 }
                 // validMaxGainB--;
+                // cout << "bListB has empty list in gain " << validMaxGainB+1 << endl;
             }
             else{
                 // validMaxGainB--;
@@ -459,6 +467,7 @@ Cell* maxGainCell(){
 Move the base Cell and update neighbor's gains
  */
 void updateGain(Cell* baseCell){
+    // cout << "updateGain()" << endl;
     bool originPart = baseCell->part;
     baseCell->part = !baseCell->part;
     baseCell->lock = true;
@@ -511,6 +520,11 @@ void updateGain(Cell* baseCell){
                 // if(cnt == 1) leftedOne->gain++;
             }
         }
+
+        if(originPart==true)
+            n->distr.first = F, n->distr.second = T;
+        else
+            n->distr.second = F, n->distr.first = T;
 
     }
     
