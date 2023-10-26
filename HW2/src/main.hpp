@@ -93,9 +93,10 @@ public:
         c->cellIt = it;
         cellNum++;
     }
-    void erase(listCell &LC, listCellIter cit){
-        LC.erase(cit);
+    listCellIter erase(listCell &LC, listCellIter cit) {
+        auto nextIter = LC.erase(cit);
         cellNum--;
+        return nextIter;
     }
     int size(){
         return cellNum;
