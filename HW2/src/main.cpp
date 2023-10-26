@@ -129,8 +129,6 @@ void DieInfoParser()
     iss >> s1 >> s2 >> t1;
     die.techB = s2[1];
     utilB = t1 / 100.;
-    // cout << "utilA: " << utilA << endl;
-    // cout << "utilB: " << utilB << endl;
     die.size = (die.w * die.h);
     die.availA = die.size * utilA;
     die.availB = die.size * utilB;
@@ -256,8 +254,6 @@ bool tryPutOn(int cellLibId, bool toDie, int move)
     pair<int, int> cellShapeInLib_F = (toDie==true) ? techB[cellLibId] : techA[cellLibId];
     long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
     long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
-    // cout << "T_area: " << T_area << ", " << "availA: " << die.availA << ", " << "availB: " << die.availB << endl;
-    // if(move) cout << "T_area: " << T_area << " ("<<cellShapeInLib_T.first << " "<<cellShapeInLib_T.second << "), " << "availA: " << die.availA - die.Aarea << ", " << "availB: " << die.availB - die.Barea << endl;
 
     if (toDie == true){
         if ((die.Aarea + T_area) < die.availA){
@@ -377,10 +373,8 @@ void init_cellGain()
             bListA->insert(gain, c);
         else
             bListB->insert(gain, c);
-        // cout << "Done insertion!!" <<endl;
         if(0) cout << "Cell " << c->crid <<": " << c->gain << endl;
     }
-    // cout << "Leaving init_cellGain..." << endl;
 
 }
 
@@ -390,14 +384,9 @@ If this Cell is valid to move(under area constraint of dieA, dieB)
 erase it from bucket list, and put it into free Cell list(locked Cell)
  */
 Cell* maxGainCell(){
-    // cout << "maxGainCell()" << endl;
-    // bListA->show('A');
-    // bListB->show('B');
-    // listCellIter it;
     int validMaxGainA = bListA->maxGain;
     int validMaxGainB = bListB->maxGain;
     while( !(validMaxGainA == -1 and validMaxGainB == -1) ){
-        // cout << "validMaxGainA: " << validMaxGainA << ", " << "validMaxGainB: " << validMaxGainB << endl;
         if(validMaxGainA >= validMaxGainB){ // put Cell from A to B
             if(validMaxGainA == -1) break;
             listCell& lcA = bListA->getMaxGainList(validMaxGainA--);
@@ -412,16 +401,12 @@ Cell* maxGainCell(){
                         return cellNow;
                     }
                     else {
-                        // cout << "Didn't put, violate constraint on B" << endl;
                         it++; // !!! Don't put it back to for loop !!!
                         continue;
                     }
                 }
-                // validMaxGainA--;
-                // cout << "bListA has empty list in gain " << validMaxGainA+1 << endl;
             }
             else{
-                // validMaxGainA--;
                 continue;
             }
         }else{ // put Cell from B to A
@@ -438,16 +423,12 @@ Cell* maxGainCell(){
                         return cellNow;
                     }
                     else {
-                        // cout << "Didn't put, violate constraint on A" << endl;
                         it++; // !!! Don't put it back to for loop !!!
                         continue;
                     }
                 }
-                // validMaxGainB--;
-                // cout << "bListB has empty list in gain " << validMaxGainB+1 << endl;
             }
             else{
-                // validMaxGainB--;
                 continue;
             }
         }
@@ -459,7 +440,6 @@ Cell* maxGainCell(){
 Move the base Cell and update neighbor's gains
  */
 void updateGain(Cell* baseCell){
-    // cout << "updateGain()" << endl;
     bool originPart = baseCell->part;
     baseCell->part = !baseCell->part;
     baseCell->lock = true;
@@ -472,44 +452,34 @@ void updateGain(Cell* baseCell){
         else
             F = n->distr.second, T = n->distr.first;
         
-        // int cnt = 0;
-        // Cell* leftedOne;
         /* before move */
         if(T==0) {
             for(auto c: n->cells){
                 if(!c->lock) c->gain++;
             }
-            // baseCell gain: original -1, now +1, should be ++ one more times (should be meaningless: locked cell will not move in this pass)
-            // baseCell->gain += 1;
         }
         else if(T==1){
             for(auto c: n->cells){
                 if(originPart != c->part and !c->lock){
-                    // cnt++, leftedOne = c;
                     c->gain--;
                 }
             }
-            // if(cnt==1) leftedOne->gain--;
         }
+
         /* Move */
         F--, T++;
-        // baseCell->part = !baseCell->part;
-        // cnt = 0;
+
         /* after move */
         if(F==0){
             for(auto c: n->cells){
                 if(!c->lock) c->gain--; 
             }
-            // baseCell gain: original +1, now -1, should be -- one more times (should be meaningless: locked cell will not move in this pass)
-            // baseCell->gain -= 1;
         }
         else if(F==1){
             for(auto c: n->cells){
                 if(originPart == c->part and !c->lock){
                     c->gain++;
-                    // cnt++, leftedOne = c;
                 }
-                // if(cnt == 1) leftedOne->gain++;
             }
         }
 
@@ -523,36 +493,21 @@ void updateGain(Cell* baseCell){
 }
 
 void pass(){
-    // cout << "pass()" << endl;
-    // Gk = 0;
-
     Cell* baseCell;
     init_distribution();
     init_cellGain();
     while((baseCell = maxGainCell())){
         if(0) cout << "basecell: " << baseCell->crid << ", gain=" << baseCell->gain << endl;
-        // cout << "after move cell " << baseCell->crid << " from "<<  (baseCell->part?"A":"B") <<" to " << (!baseCell->part?"A":"B") << endl;
-        // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
 
-        // cout << "Enter pass's while loop" << endl;
-        // Gk += baseCell->gain;
         steps.emplace_back(make_pair(baseCell->gain, baseCell->cvid));
-        // cout << "update gain" << endl;
         updateGain(baseCell);
-        // cout << "Done update gain" << endl;
     }
-    // cout << "Leaving pass..." << endl;
-    // cout << endl;
-    // cout << "End pass()" << endl;
-    
-
 }
 
 pair<int,int> getBestMove(){
     int Gk = 0;
     int k = steps.size();
-    // int prefix[k];
-    // fill(prefix.begin(), prefix.end(), 0);
+
     vector<int> prefix(k, 10);
     prefix[0] = steps[0].first;
     for(int i = 1; i < k; i++){
@@ -567,18 +522,10 @@ pair<int,int> getBestMove(){
             Gk = prefix[i];
         }
     }
-    // cout << "Gain seq: ";
-    // for(int i = 0; i<k; i++) cout << steps[i].first << " ";
-    // cout << "\nreturn best move index " << bestSeqIdx << endl;
-    // cout << "Gk: " << Gk << endl;
     return {bestSeqIdx, Gk};
 }
 
 void FM(){
-    // cout << "FM()" << endl;
-    // cout << "Intial partition area: " << endl;
-    // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
-
     while(1){
         pass();
         auto [moveTo, Gk] = getBestMove();
@@ -588,26 +535,7 @@ void FM(){
             for(auto p: steps){
                 Cell* c = cellArray[p.second];
                 c->part = !c->part;
-                if(c->part){ // now is A, before revert is B
-                    pair<int, int> cellShapeInLib_T = techA[c->lib];
-                    pair<int, int> cellShapeInLib_F = techB[c->lib];
-                    long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
-                    long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
-                    die.Aarea += T_area;
-                    die.Barea -= F_area;
-                }else{// now is B, before revert is A
-                    pair<int, int> cellShapeInLib_T = techB[c->lib];
-                    pair<int, int> cellShapeInLib_F = techA[c->lib];
-                    long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
-                    long long F_area = ((long long)cellShapeInLib_F.first * (long long)cellShapeInLib_F.second);
-                    die.Barea += T_area;
-                    die.Aarea -= F_area;
-                }
             }
-
-            // cout << "----Reverted to ----"<<endl;
-            // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
-            // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
             break;
         }
 
@@ -615,7 +543,6 @@ void FM(){
             Cell* c = cellArray[steps[i].second];
             c->part = !c->part;
             int cellLibId = c->lib;
-            // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
             pair<int, int> cellShapeInLib_T = (c->part) ? techA[cellLibId] : techB[cellLibId];
             pair<int, int> cellShapeInLib_F = (c->part) ? techB[cellLibId] : techA[cellLibId];
             long long T_area = ((long long)cellShapeInLib_T.first * (long long)cellShapeInLib_T.second);
@@ -627,14 +554,9 @@ void FM(){
                 die.Barea += T_area;
                 die.Aarea -= F_area;
             }
-            // cout << "reverting...die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
 
         }
-        // cout << "----Reverted to ----"<<endl;
-        // cout << "die.Aarea: " << die.Aarea <<", " << "die.Barea: " <<die.Barea << endl;
-        // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
         steps = {};
-        // cout << "steps.size(): " << steps.size() << endl;
         bListA->clear();
         bListB->clear();
 
