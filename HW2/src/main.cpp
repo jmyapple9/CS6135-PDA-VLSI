@@ -92,7 +92,7 @@ void libParser()
         LibRealId = stoi(s2.substr(2));
         techA.emplace_back(t1*t2);
         lib_R_V[LibRealId] = LibVirId;
-        lib_V_R[LibVirId] = LibRealId;
+        // lib_V_R[LibVirId] = LibRealId;
     }
 
     // Tech TB's LibCell, if exist
@@ -158,12 +158,12 @@ void cellParser()
         iss >> s1 >> s2 >> s3;
         LibRealId = stoi(s3.substr(2));
         LibVirId = lib_R_V[LibRealId];
-        cellArray.emplace_back(new Cell(LibVirId, cellVirId));
-
         cellRealId = stoi(s2.substr(1));
+        cellArray.emplace_back(new Cell(LibVirId, cellVirId, cellRealId));
+
         cell_R_V[cellRealId] = cellVirId;
-        cell_V_R[cellVirId] = cellRealId;
-        cellArray[cellVirId]->crid = cellRealId; // only for debug
+        // cell_V_R[cellVirId] = cellRealId;
+        // cellArray[cellVirId]->crid = cellRealId; // only for debug
     }
 }
 
@@ -186,8 +186,8 @@ void netParser()
 
         Net *n = new Net(cellCount);
         netArray.emplace_back(n);
-        net_R_V[netRealId] = netVirId;
-        net_V_R[netVirId] = netRealId;
+        // net_R_V[netRealId] = netVirId;
+        // net_V_R[netVirId] = netRealId;
         netArray[netVirId]->nrid = netRealId; // only for debug
 
         while (cellCount--){
@@ -281,19 +281,13 @@ bool tryPutOn(int cellLibId, bool toDie, int move)
         }
     }
 }
-
-int init_partition()
-{
-    clock_t start = clock();
-    vector<pair<int, int>> Diff;
-
+void init_partition_2(){
+    
     for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
-        // int lib = cellArray[cellVirId]->lib;
         int cellLibId = cellArray[cellVirId]->lib;
         int sizeOnA = techA[cellLibId];
         int sizeOnB = techB[cellLibId];
-
-        if (sizeOnA <= sizeOnB){ // can't delete this line  !!!
+        if (sizeOnA <= sizeOnB && die.Aarea < die.Barea){ // can't delete this line  !!! (die.Aarea < die.Barea is optional)
             if (tryPutOn(cellLibId, true, 0))
                 cellArray[cellVirId]->part = true;
             else if (tryPutOn(cellLibId, false, 0))
@@ -316,18 +310,92 @@ int init_partition()
             }
         }
     }
-    // ofstream myfile;
-    // myfile.open ("output.txt");
-    // int i = 0;
-    // for(auto c:cellArray)
-    //     cout << "Cell " << ++i << " in " << c->part <<endl;
-    // myfile.close();
-    // bListA = new BucketList(pmax);
-    // bListB = new BucketList(pmax);
+    // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
+
+}
+int init_partition_1()
+{
+    clock_t start = clock();
+
+    /* vector<pair<double, int>> ratio;
+    for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
+        int cellLibId = cellArray[cellVirId]->lib;
+        double sizeOnA = techA[cellLibId];
+        double sizeOnB = techB[cellLibId];
+        ratio.emplace_back(make_pair(sizeOnA/sizeOnB, cellVirId));
+    }
+
+    sort(ratio.begin(), ratio.end());
+
+    for(int i = 0; i<ratio.size(); ++i){
+        int cellVirId = ratio[i].second;
+        int cellLibId = cellArray[cellVirId]->lib;
+        if(die.availA - die.Aarea > die.availB - die.Barea){
+            if(tryPutOn(cellLibId, true, 0)){
+                cellArray[cellVirId]->part = true;
+            }
+            else if(tryPutOn(cellLibId, false, 0)){
+                cellArray[cellVirId]->part = false;
+            }
+            else{
+                cout << "Invalid initial partition(A)!" << endl;
+                cout << "lefted cells: " << ratio.size()-1-i << endl;
+                cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
+                cellArray[cellVirId]->part = true;
+                exit(1);
+            }
+        }else{
+            if(tryPutOn(cellLibId, false, 0)){
+                cellArray[cellVirId]->part = false;
+            }
+            else if(tryPutOn(cellLibId, true, 0)){
+                cellArray[cellVirId]->part = true;
+            }
+            else{
+                cout << "Invalid initial partition(B)!" << endl;
+                cout << "lefted cells: " << ratio.size()-1-i << endl;
+                cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
+                cellArray[cellVirId]->part = true;
+                exit(1);
+            }
+        }
+    } */
+
+    for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
+        int cellLibId = cellArray[cellVirId]->lib;
+        int sizeOnA = techA[cellLibId];
+        int sizeOnB = techB[cellLibId];
+        if (sizeOnA <= sizeOnB){ // can't delete this line  !!!
+            if (tryPutOn(cellLibId, true, 0))
+                cellArray[cellVirId]->part = true;
+            else if (tryPutOn(cellLibId, false, 0))
+                cellArray[cellVirId]->part = false;
+            else{
+                cout << "Invalid initial partition!" << endl;
+                cellArray[cellVirId]->part = true;
+                return false;
+                // exit(1);
+            }
+        }
+        else{ // can't delete this line  !!!
+            if (tryPutOn(cellLibId, false, 0))
+                cellArray[cellVirId]->part = false;
+            else if (tryPutOn(cellLibId, true, 0))
+                cellArray[cellVirId]->part = true;
+            else{
+                cout << "Invalid initial partition!" << endl;
+                cellArray[cellVirId]->part = true;
+                return false;
+                // exit(1);
+            }
+        }
+    }
+    // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
 
     if (TIME)
         printf("Initial partition Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
-    return pmax;
+    
+    return true;
 }
 
 void init_distribution()
@@ -526,7 +594,7 @@ pair<int,int> getBestMove(){
     return {bestSeqIdx, Gk};
 }
 
-void FM(int pmax){
+void FM(){
     // cout << "start FM()" << endl;
     while(1){
         BucketList bListA = BucketList(pmax);
@@ -574,11 +642,11 @@ int main(int argc, char *argv[]){
     auto [testcasePath, outputPath] = eatArg(argc, argv);
 
     parser(testcasePath);
-    // check();
-    int pmax = init_partition();
-    // init_distribution();
+    if(!init_partition_1()){
+        init_partition_2();
+    }
 
-    FM(pmax);
+    FM();
 
     output(outputPath);
 

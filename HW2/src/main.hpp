@@ -52,9 +52,10 @@ public:
     int crid; // just for debug (Cell real id)
     int cvid;
     list<Cell*>::iterator cellIt;
-    Cell(int _lib, int _cvid){
+    Cell(int _lib, int _cvid, int _crid){
         lib = _lib;
         cvid = _cvid;
+        crid = _crid;
         lock = false;
         gain = 0;
     }
