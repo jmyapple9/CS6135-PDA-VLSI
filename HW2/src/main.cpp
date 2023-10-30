@@ -444,10 +444,11 @@ void init_cellGain(BucketList& bListA, BucketList& bListB)
             if (T == 0)
                 gain--;
         }
+        c->gain = gain;
         if (c->part == true)
-            bListA.insert(gain, c);
+            bListA.insert(c);
         else
-            bListB.insert(gain, c);
+            bListB.insert(c);
         if(0) cout << "Cell " << c->crid <<": " << c->gain << endl;
     }
 }
@@ -464,7 +465,7 @@ Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
         if(validMaxGainA >= validMaxGainB){ // put Cell from A to B
             // cout << "validMaxGainA=" << validMaxGainA<<endl;
             if(validMaxGainA == -1) break;
-            listCell& lcA = bListA.getMaxGainList(validMaxGainA--);
+            listCell& lcA = bListA.getGainList(validMaxGainA--);
             if (!lcA.empty()) {
                 for (auto it = lcA.begin(); it != lcA.end(); ) {
                     if (tryPutOn((*it)->lib, false, 1)) {
@@ -484,7 +485,7 @@ Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
         }else{ // put Cell from B to A
             // cout << "validMaxGainB=" << validMaxGainB<<endl;
             if(validMaxGainB == -1) continue; // different from validMaxGainA: possibility: A=3, B=-1
-            listCell& lcB = bListB.getMaxGainList(validMaxGainB--);
+            listCell& lcB = bListB.getGainList(validMaxGainB--);
             if (!lcB.empty()) {
                 for (auto it = lcB.begin(); it != lcB.end(); ) {
                     if (tryPutOn((*it)->lib, true, 1)) {
@@ -506,10 +507,21 @@ Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
     return nullptr;
 }
 
+void updateBucketList(int oldGain, Cell* c, BucketList& bListA, BucketList& bListB){
+    if(!c->erased){
+        if(c->part){
+            bListA.erase(oldGain, bListA, c);
+            bListA.insert(c);
+        }else{
+            bListB.erase(oldGain, bListB, c);
+            bListB.insert(c);
+        }
+    }
+}
 /* 
 Move the base Cell and update neighbor's gains
  */
-void updateGain(Cell* baseCell){
+void updateGain(Cell* baseCell, BucketList& bListA, BucketList& bListB){
     bool originPart = baseCell->part;
     baseCell->part = !baseCell->part;
     baseCell->lock = true;
@@ -524,13 +536,17 @@ void updateGain(Cell* baseCell){
         /* before move */
         if(T==0) {
             for(auto c: n->cells){
-                if(!c->lock) c->gain++;
+                if(!c->lock) {
+                    c->gain++;
+                    updateBucketList(c->gain-1, c, bListA, bListB);
+                }
             }
         }
         else if(T==1){
             for(auto c: n->cells){
                 if(originPart != c->part and !c->lock){
                     c->gain--;
+                    updateBucketList(c->gain+1, c, bListA, bListB);
                 }
             }
         }
@@ -541,13 +557,17 @@ void updateGain(Cell* baseCell){
         /* after move */
         if(F==0){
             for(auto c: n->cells){
-                if(!c->lock) c->gain--; 
+                if(!c->lock) {
+                    c->gain--; 
+                    updateBucketList(c->gain+1, c, bListA, bListB);
+                }
             }
         }
         else if(F==1){
             for(auto c: n->cells){
                 if(originPart == c->part and !c->lock){
                     c->gain++;
+                    updateBucketList(c->gain-1, c, bListA, bListB);
                 }
             }
         }
@@ -569,7 +589,7 @@ void pass(BucketList& bListA, BucketList& bListB){
     while((baseCell = maxGainCell(bListA, bListB))){
         // cout << "Find max!" <<endl;
         steps.emplace_back(make_pair(baseCell->gain, baseCell->cvid));
-        updateGain(baseCell);
+        updateGain(baseCell, bListA, bListB);
     }
 }
 
@@ -608,6 +628,7 @@ void FM(){
                 Cell* c = cellArray[p.second];
                 c->part = !c->part;
             }
+            cout << "leaveing" << endl;
             break;
         }
 
@@ -632,9 +653,11 @@ void FM(){
 
         for(Cell* c: cellArray) {
             c->lock = false; // unlock all cells
+            c->erased = false;
         }
         
     }
+    cout << "FM finished" << endl;
 }
 
 int main(int argc, char *argv[]){

@@ -48,6 +48,7 @@ public:
     int lib; // Cell libarary virtual id
     bool lock; // true=locked, false=unlock
     bool part; // partition A(true) or B(false)
+    bool erased;
     int gain;
     int crid; // just for debug (Cell real id)
     int cvid;
@@ -57,6 +58,7 @@ public:
         cvid = _cvid;
         crid = _crid;
         lock = false;
+        erased = false;
         gain = 0;
     }
 };
@@ -85,24 +87,39 @@ public:
         cellNum = 0;
     }
 
-    void insert(int gainValue, Cell* c){
-        int idx = gainValue + Pmax;
+    void insert(Cell* c){
+        int idx = c->gain + Pmax;
         gainList[idx].emplace_back(c);
         // cout << "inserting" << endl;
         listCellIter it = prev(gainList[idx].end());
-        c->gain = gainValue;
+        // c->gain = gainValue;
+        c->erased = false;
         c->cellIt = it;
         cellNum++;
     }
     listCellIter erase(listCell &LC, listCellIter cit) {
+        // cout << "erase!"<<endl;
+        Cell *c= *cit;
+        cout << "erase "<< c->crid <<" from " << (c->part?"A":"B") << c->gain << "."<<endl;
         auto nextIter = LC.erase(cit);
+        cout << "erased!" << endl;
         cellNum--;
+        c->erased = true;
         return nextIter;
+    }
+    void erase(int oldGain, BucketList& bList, Cell* c) {
+        listCell& LC = bList.getGainList(oldGain);
+        // if(!c->erased){
+            cout << "erase "<< c->crid<<" from " << (c->part?"A":"B") << oldGain <<endl;
+            auto nextIter = LC.erase(c->cellIt);
+            cout << "erased!" << endl;
+            cellNum--;
+        // }
     }
     int size(){
         return cellNum;
     }
-    list<Cell*> &getMaxGainList(int validMaxGainA){
+    list<Cell*> &getGainList(int validMaxGainA){
         return gainList[validMaxGainA];
     }
     void show(bool die){
