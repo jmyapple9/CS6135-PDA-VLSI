@@ -91,6 +91,8 @@ public:
         }
         --Size;
         delete nodeToDelete;
+        // nodeToDelete = nullptr;
+        // cout << "d~" << endl;
         return nextNode;
     }
 
@@ -170,6 +172,7 @@ public:
     int gain;
     int crid; // just for debug (Cell real id)
     int cvid;
+    bool erased;
     // List<Cell*>::iterator cellIt;
     List<Cell*>::Node* cellPtr;
     Cell(int _lib, int _cvid, int _crid){
@@ -177,6 +180,7 @@ public:
         cvid = _cvid;
         crid = _crid;
         lock = false;
+        erased = false;
         gain = 0;
     }
 };
@@ -209,19 +213,31 @@ public:
         // cellNum = 0;
     }
 
-    void insert(int gainValue, Cell* c){
-        int idx = gainValue + Pmax;
+    void insert(Cell* c){
+        int idx = c->gain + Pmax;
         gainList[idx].pushBack(c);
         // cout << "inserting" << endl;
         c->cellPtr = gainList[idx].tail;
-        c->gain = gainValue;
+        c->erased = false;
+        // c->gain = gainValue;
         // cellNum++;
     }
     List<Cell*>::Node* erase(ListCell &LC, List<Cell*>::Node* del) {
+        Cell* c = del->data;
+        c->erased = true;
+        c->cellPtr = nullptr;
         return LC.deleteNode(del);
         // auto nextIter = LC.erase(del);
         // cellNum--;
         // return nextIter;
+    }
+    void erase(int oldGain, List<Cell*>::Node* n) {
+        cout << "update erase" <<endl;
+        Cell* c = n->data;
+        ListCell& LC = gainList[oldGain];
+        LC.deleteNode(c->cellPtr);
+        c->cellPtr = nullptr;
+        // cellNum--;
     }
     
     // int size(){

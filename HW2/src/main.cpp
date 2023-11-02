@@ -428,10 +428,11 @@ void init_cellGain(BucketList& bListA, BucketList& bListB)
             if (T == 0)
                 gain--;
         }
+        c->gain = gain;
         if (c->part == true)
-            bListA.insert(gain, c);
+            bListA.insert(c);
         else
-            bListB.insert(gain, c);
+            bListB.insert(c);
         if(0) cout << "Cell " << c->crid <<": " << c->gain << endl;
     }
 }
@@ -491,10 +492,22 @@ Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
     return nullptr;
 }
 
+void updateBucketList(int oldGain, Cell* c, BucketList& bListA, BucketList& bListB){
+    if(!c->erased){
+        if(c->part){
+            bListA.erase(oldGain, c->cellPtr);
+            bListA.insert(c);
+        }else{
+            bListB.erase(oldGain, c->cellPtr);
+            bListB.insert(c);
+        }
+    }
+}
+
 /* 
 Move the base Cell and update neighbor's gains
  */
-void updateGain(Cell* baseCell){
+void updateGain(Cell* baseCell, BucketList& bListA, BucketList& bListB){
     bool originPart = baseCell->part;
     baseCell->part = !baseCell->part;
     baseCell->lock = true;
@@ -509,13 +522,17 @@ void updateGain(Cell* baseCell){
         /* before move */
         if(T==0) {
             for(auto c: n->cells){
-                if(!c->lock) c->gain++;
+                if(!c->lock){
+                    c->gain++;
+                    updateBucketList(c->gain-1, c, bListA, bListB);
+                } 
             }
         }
         else if(T==1){
             for(auto c: n->cells){
                 if(originPart != c->part and !c->lock){
                     c->gain--;
+                    updateBucketList(c->gain+1, c, bListA, bListB);
                 }
             }
         }
@@ -526,13 +543,18 @@ void updateGain(Cell* baseCell){
         /* after move */
         if(F==0){
             for(auto c: n->cells){
-                if(!c->lock) c->gain--; 
+                if(!c->lock) {
+                    c->gain--;
+                    updateBucketList(c->gain+1, c, bListA, bListB);
+                }
+                
             }
         }
         else if(F==1){
             for(auto c: n->cells){
                 if(originPart == c->part and !c->lock){
                     c->gain++;
+                    updateBucketList(c->gain-1, c, bListA, bListB);
                 }
             }
         }
@@ -552,10 +574,11 @@ void pass(BucketList& bListA, BucketList& bListB){
     init_cellGain(bListA, bListB);
     // cout << "Enter pass while loop..." << endl;
     while((baseCell = maxGainCell(bListA, bListB))){
-        // cout << "Find max!" <<endl;
+        cout << "Find max!" <<endl;
         steps.emplace_back(make_pair(baseCell->gain, baseCell->cvid));
-        updateGain(baseCell);
+        updateGain(baseCell, bListA, bListB);
     }
+    // cout << "End pass" <<endl;
 }
 
 pair<int,int> getBestMove(){
