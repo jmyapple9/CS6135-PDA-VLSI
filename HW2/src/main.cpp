@@ -40,35 +40,35 @@ void getIss(istringstream &iss, string line){
     iss.str(line);
 }
 
-void check(){
-    cout << "checking LibCells:" << endl;
-    cout << "LibCells A:" << endl;
-    for (int i = 0; i < techA.size(); i++)
-        cout << "MC" << lib_V_R[i] << ": " << techA[i]<< endl;
+// void check(){
+//     cout << "checking LibCells:" << endl;
+//     cout << "LibCells A:" << endl;
+//     for (int i = 0; i < techA.size(); i++)
+//         cout << "MC" << lib_V_R[i] << ": " << techA[i]<< endl;
 
-    if (NumTechs > 1){
-        cout << "LibCells B:" << endl;
-        for (int i = 0; i < techB.size(); i++)
-            cout << "MC" << lib_V_R[i] << ": " << techB[i] << endl;
-    }
+//     if (NumTechs > 1){
+//         cout << "LibCells B:" << endl;
+//         for (int i = 0; i < techB.size(); i++)
+//             cout << "MC" << lib_V_R[i] << ": " << techB[i] << endl;
+//     }
 
-    cout << "checking Net Array:" << endl;
-    for (int i = 0; i < netArray.size(); i++){
-        cout << "In Net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
-        for (auto c : netArray[i]->cells)
-            cout << c->crid << " ";
+//     cout << "checking Net Array:" << endl;
+//     for (int i = 0; i < netArray.size(); i++){
+//         cout << "In Net N" << net_V_R[i] << " having " << netArray[i]->numCells << " cells:" << endl;
+//         for (auto c : netArray[i]->cells)
+//             cout << c->crid << " ";
 
-        cout << endl;
-    }
-    cout << "\nchecking Cell Array:" << endl;
-    for (int i = 0; i < cellArray.size(); i++){
-        cout << "In Cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
-        for (auto n : cellArray[i]->nets)
-            cout << n->nrid << " ";
+//         cout << endl;
+//     }
+//     cout << "\nchecking Cell Array:" << endl;
+//     for (int i = 0; i < cellArray.size(); i++){
+//         cout << "In Cell C" << cell_V_R[i] << " having " << cellArray[i]->nets.size() << " nets:" << endl;
+//         for (auto n : cellArray[i]->nets)
+//             cout << n->nrid << " ";
         
-        cout << endl;
-    }
-}
+//         cout << endl;
+//     }
+// }
 
 void libParser()
 {
@@ -195,10 +195,10 @@ void netParser()
             iss >> s1 >> s2;
             int cellRealId = stoi(s2.substr(1));
             int cellVirId = cell_R_V[cellRealId];
-            n->cells.push_back(cellArray[cellVirId]);
+            n->cells.pushBack(cellArray[cellVirId]);
             // Also build cellArray
-            list<Net*>& nets = cellArray[cellVirId]->nets;
-            nets.push_back(n);
+            List<Net*>& nets = cellArray[cellVirId]->nets;
+            nets.pushBack(n);
             int numP = nets.size();
             pmax = max(pmax, numP);
         }
@@ -256,6 +256,7 @@ void output(string outputPath){
 
 bool tryPutOn(int cellLibId, bool toDie, int move)
 {
+    // if(move) cout << "try put on" << endl;
     if (toDie == true){
         long long T_area = techA[cellLibId];
         long long F_area = techB[cellLibId];
@@ -438,25 +439,26 @@ void init_cellGain(BucketList& bListA, BucketList& bListB)
 /* 
 return: the Cell with larger Cell gain among bListA, bListB.
 If this Cell is valid to move(under area constraint of dieA, dieB)
-erase it from bucket list, and put it into free Cell list(locked Cell)
+erase it from bucket List, and put it into free Cell List(locked Cell)
  */
 Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
+    // cout << "maxGainCell~" <<endl;
     int validMaxGainA = bListA.maxGain;
     int validMaxGainB = bListB.maxGain;
     while( !(validMaxGainA == -1 and validMaxGainB == -1) ){
         if(validMaxGainA >= validMaxGainB){ // put Cell from A to B
-            // cout << "validMaxGainA=" << validMaxGainA<<endl;
             if(validMaxGainA == -1) break;
-            listCell& lcA = bListA.getMaxGainList(validMaxGainA--);
-            if (!lcA.empty()) {
+            // cout << "validMaxGainA=" << validMaxGainA<<endl;
+            ListCell& lcA = bListA.getMaxGainList(validMaxGainA--);
+            if (lcA.size()!=0) {
                 for (auto it = lcA.begin(); it != lcA.end(); ) {
                     if (tryPutOn((*it)->lib, false, 1)) {
                         Cell* cellNow = *it;
-                        it = bListA.erase(lcA, it);
+                        it = bListA.erase(lcA, it.getNodePointer());
                         return cellNow;
                     }
                     else {
-                        it = bListA.erase(lcA, it);
+                        it = bListA.erase(lcA, it.getNodePointer());
                         // ++it;
                     }
                 }
@@ -465,18 +467,18 @@ Cell* maxGainCell(BucketList& bListA, BucketList& bListB){
                 continue;
             }
         }else{ // put Cell from B to A
-            // cout << "validMaxGainB=" << validMaxGainB<<endl;
             if(validMaxGainB == -1) continue; // different from validMaxGainA: possibility: A=3, B=-1
-            listCell& lcB = bListB.getMaxGainList(validMaxGainB--);
-            if (!lcB.empty()) {
+            // cout << "validMaxGainB=" << validMaxGainB<<endl;
+            ListCell& lcB = bListB.getMaxGainList(validMaxGainB--);
+            if (lcB.size()!=0) {
                 for (auto it = lcB.begin(); it != lcB.end(); ) {
                     if (tryPutOn((*it)->lib, true, 1)) {
                         Cell* cellNow = *it;
-                        it = bListB.erase(lcB, it);
+                        it = bListB.erase(lcB, it.getNodePointer());
                         return cellNow;
                     }
                     else {
-                        it = bListB.erase(lcB, it);
+                        it = bListB.erase(lcB, it.getNodePointer());
                         // ++it;
                     }
                 }

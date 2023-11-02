@@ -1,5 +1,5 @@
 #include <iostream>
-#include <list>
+// #include <List>
 #include <string>
 #include <fstream>
 #include <vector>
@@ -23,10 +23,129 @@ class die;
 class Cell;
 class Net;
 class Die;
+// class List;
 
-typedef std::vector<std::list<Cell*>>::iterator bListIterator;
-typedef list<Cell*>::iterator listCellIter;
-typedef list<Cell*> listCell;
+// typedef std::vector<std::List<Cell*>>::iterator bListIterator;
+// typedef List<Cell*>::iterator ListCellIter;
+template <typename T>
+class List {
+public:
+    struct Node {
+        T data;
+        Node* prev;
+        Node* next;
+        Node(const T& value) : data(value), prev(nullptr), next(nullptr) {}
+    };
+
+    Node* head;
+    Node* tail;
+    int Size = 0;
+    List() : head(nullptr), tail(nullptr), Size(0) {}
+
+    int size(){
+        return Size;
+    }
+    // Function to insert a new element at the end of the List
+    void pushBack(const T& value) {
+        Node* newNode = new Node(value);
+        if (head == nullptr) {
+            head = tail = newNode;
+        } else {
+            newNode->prev = tail;
+            tail->next = newNode;
+            tail = newNode;
+        }
+        ++Size;
+    }
+
+    // Function to print the List
+    void printList() {
+        Node* current = head;
+        while (current != nullptr) {
+            std::cout << current->data << " ";
+            current = current->next;
+        }
+        std::cout << std::endl;
+    }
+
+    Node* deleteNode(Node* nodeToDelete) {
+        if (nodeToDelete == nullptr) {
+            return nullptr;  // Nothing to delete
+        }
+
+        Node* nextNode = nodeToDelete->next;  // Store the next node pointer
+        if (nodeToDelete == head) {
+            head = nodeToDelete->next;
+        }
+
+        if (nodeToDelete == tail) {
+            tail = nodeToDelete->prev;
+        }
+
+        if (nodeToDelete->prev) {
+            nodeToDelete->prev->next = nodeToDelete->next;
+        }
+
+        if (nodeToDelete->next) {
+            nodeToDelete->next->prev = nodeToDelete->prev;
+        }
+        --Size;
+        delete nodeToDelete;
+        return nextNode;
+    }
+
+    // Destructor to free the memory
+    ~List() {
+        Node* current = head;
+        while (current != nullptr) {
+            Node* next = current->next;
+            delete current;
+            current = next;
+        }
+    }
+    class Iterator {
+    public:
+        Iterator(Node* node) : currentNode(node) {}
+
+        T& operator*() {
+            return currentNode->data;
+        }
+        Node* getNodePointer() {
+            return currentNode;
+        }
+        Iterator& operator--() {
+            return currentNode;
+        }
+
+        Iterator& operator++() {
+            currentNode = currentNode->next;
+            return *this;
+        }
+
+        Iterator operator++(int) {
+            Iterator temp = *this;
+            ++(*this);
+            return temp;
+        }
+
+        bool operator!=(const Iterator& other) {
+            return currentNode != other.currentNode;
+        }
+
+    private:
+        Node* currentNode;
+    };
+
+    Iterator begin() {
+        return Iterator(head);
+    }
+
+    Iterator end() {
+        return Iterator(nullptr);
+    }
+};
+
+typedef List<Cell*> ListCell;
 
 class Die{
 public:
@@ -43,7 +162,7 @@ public:
 
 class Cell{
 public:
-    list<Net*> nets;
+    List<Net*> nets;
     // cellNum* c;
     int lib; // Cell libarary virtual id
     bool lock; // true=locked, false=unlock
@@ -51,7 +170,8 @@ public:
     int gain;
     int crid; // just for debug (Cell real id)
     int cvid;
-    list<Cell*>::iterator cellIt;
+    // List<Cell*>::iterator cellIt;
+    List<Cell*>::Node* cellPtr;
     Cell(int _lib, int _cvid, int _crid){
         lib = _lib;
         cvid = _cvid;
@@ -64,7 +184,7 @@ public:
 
 class Net{
 public:
-    list<Cell*> cells;
+    List<Cell*> cells;
     int numCells; // May be redundant: can be get by cells.size()
     int nrid; // Net real id
     pair<int,int> distr; // for Net i, # of Cell in partition A or B:<A(i), B(i)>
@@ -75,52 +195,58 @@ public:
 
 class BucketList{
 public:
-    int Pmax, maxGain, cellNum;
-    vector<list<Cell*>> gainList;
+    int Pmax, maxGain;
+    // int cellNum;
+    vector<List<Cell*>> gainList;
     BucketList(int _Pmax){
         Pmax = _Pmax;
         int bListLen = Pmax * 2 + 1; // -Pmax ~ Pmax, 0 included
-        maxGain = bListLen - 1; // point to top of gain list
-        gainList.resize(bListLen);
-        cellNum = 0;
+        maxGain = bListLen - 1; // point to top of gain List
+        for (size_t i = 0; i < bListLen; ++i) {
+            gainList.emplace_back(List<Cell*>()); // Create and push an empty list
+        }
+        // gainList.resize(bListLen);
+        // cellNum = 0;
     }
 
     void insert(int gainValue, Cell* c){
         int idx = gainValue + Pmax;
-        gainList[idx].emplace_back(c);
+        gainList[idx].pushBack(c);
         // cout << "inserting" << endl;
-        listCellIter it = prev(gainList[idx].end());
+        c->cellPtr = gainList[idx].tail;
         c->gain = gainValue;
-        c->cellIt = it;
-        cellNum++;
+        // cellNum++;
     }
-    listCellIter erase(listCell &LC, listCellIter cit) {
-        auto nextIter = LC.erase(cit);
-        cellNum--;
-        return nextIter;
+    List<Cell*>::Node* erase(ListCell &LC, List<Cell*>::Node* del) {
+        return LC.deleteNode(del);
+        // auto nextIter = LC.erase(del);
+        // cellNum--;
+        // return nextIter;
     }
-    int size(){
-        return cellNum;
-    }
-    list<Cell*> &getMaxGainList(int validMaxGainA){
+    
+    // int size(){
+    //     return cellNum;
+    // }
+    List<Cell*> &getMaxGainList(int validMaxGainA){
         return gainList[validMaxGainA];
     }
-    void show(bool die){
-        cout << "In Bucketlist " << (die?'A':'B') <<endl;
-        cout << "Pmax: " << Pmax << endl;
-        cout << "maxGain: " << maxGain <<" (index)" << endl;
-        for(int i = 0; i<gainList.size(); i++){
-            cout << "Gain "<< i-Pmax << ": "<<endl;
-            for(auto c: gainList[i]){
-                cout << c->crid <<((c != (gainList[i].back()))?" ":"\n");
-            }
-        }
-        cout << endl << endl;
-    }
+    // void show(bool die){
+    //     cout << "In BucketList " << (die?'A':'B') <<endl;
+    //     cout << "Pmax: " << Pmax << endl;
+    //     cout << "maxGain: " << maxGain <<" (index)" << endl;
+    //     for(int i = 0; i<gainList.size(); i++){
+    //         cout << "Gain "<< i-Pmax << ": "<<endl;
+    //         for(auto c: gainList[i]){
+    //             cout << c->crid <<((c != (gainList[i].back()))?" ":"\n");
+    //         }
+    //     }
+    //     cout << endl << endl;
+    // }
     void clear(){
         for(auto &L: gainList){
-            L = list<Cell*>();
+            L = List<Cell*>();
         }
-        cellNum = 0;
+        // cellNum = 0;
     }
 };
+
