@@ -281,100 +281,84 @@ bool tryPutOn(int cellLibId, bool toDie, int move)
         }
     }
 }
-void init_partition_2(){
-    
-    for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
-        int cellLibId = cellArray[cellVirId]->lib;
-        int sizeOnA = techA[cellLibId];
-        int sizeOnB = techB[cellLibId];
-        if (sizeOnA <= sizeOnB && die.Aarea < die.Barea){ // can't delete this line  !!! (die.Aarea < die.Barea is optional)
-            if (tryPutOn(cellLibId, true, 0))
-                cellArray[cellVirId]->part = true;
-            else if (tryPutOn(cellLibId, false, 0))
-                cellArray[cellVirId]->part = false;
+
+void greedy_fix(){
+    while(1){
+        Cell* c1 = cellArray[rand()%cellArray.size()];
+        Cell* c2 = cellArray[rand()%cellArray.size()];
+        if(rand()%10000000==0)
+            cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
+        
+        int cb1 = c1->lib;
+        int cb2 = c2->lib;
+        if(cb1 == cb2) continue;
+        long long a1 = techA[cb1];
+        long long b1 = techB[cb1];
+        long long a2 = techA[cb2];
+        long long b2 = techB[cb2];
+        bool randomSelectBad = rand()%100 == 0;
+        if (c1->part == false && c2->part==true){ // c1 is on B, c2 is on A
+            if ((die.Aarea + (a1-a2)) <= die.availA and (die.Barea + (b2-b1)) > die.availB and (b2-b1)<0 or
+                (die.Aarea + (a1-a2)) > die.availA and (die.Barea + (b2-b1)) <= die.availB and (a1-a2)<0 or
+                randomSelectBad
+            ){
+                die.Aarea += (a1-a2);
+                die.Barea += (b2-b1);
+                c1->part = true;
+                c2->part = false;
+                if(die.Aarea <= die.availA and die.Barea <= die.availB ){
+                    break;
+                }
+                else{
+                    continue;
+                }
+            }
             else{
-                cout << "Invalid initial partition!" << endl;
-                cellArray[cellVirId]->part = true;
-                // exit(1);
+                continue;
             }
         }
-        else{ // can't delete this line  !!!
-            if (tryPutOn(cellLibId, false, 0))
-                cellArray[cellVirId]->part = false;
-            else if (tryPutOn(cellLibId, true, 0))
-                cellArray[cellVirId]->part = true;
+        else if(c1->part == true && c2->part==false){ // c1 is on A, c2 is on B
+            if ((die.Aarea + (a2-a1)) <= die.availA and (die.Barea + (b1-b2)) > die.availB and (b1-b2)<0 or
+                (die.Aarea + (a2-a1)) > die.availA and (die.Barea + (b1-b2)) <= die.availB and (a2-a1)<0 or
+                randomSelectBad
+            ){
+                die.Aarea += (a2-a1);
+                die.Barea += (b1-b2);
+                c1->part = false;
+                c2->part = true;
+                if(die.Aarea <= die.availA and die.Barea <= die.availB ){
+                    break;
+                }
+                else{
+                    continue;
+                }
+            }
             else{
-                cout << "Invalid initial partition!" << endl;
-                cellArray[cellVirId]->part = true;
-                // exit(1);
+                continue;
             }
         }
     }
-    // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
-
+    cout << "Done greedy fix: " <<endl;
+    cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
+    cout << endl;
 }
-int init_partition_1()
-{
+
+bool init_partition(){
     clock_t start = clock();
-
-    /* vector<pair<double, int>> ratio;
+    bool valid = true;
     for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
         int cellLibId = cellArray[cellVirId]->lib;
-        double sizeOnA = techA[cellLibId];
-        double sizeOnB = techB[cellLibId];
-        ratio.emplace_back(make_pair(sizeOnA/sizeOnB, cellVirId));
-    }
-
-    sort(ratio.begin(), ratio.end());
-
-    for(int i = 0; i<ratio.size(); ++i){
-        int cellVirId = ratio[i].second;
-        int cellLibId = cellArray[cellVirId]->lib;
-        if(die.availA - die.Aarea > die.availB - die.Barea){
-            if(tryPutOn(cellLibId, true, 0)){
-                cellArray[cellVirId]->part = true;
-            }
-            else if(tryPutOn(cellLibId, false, 0)){
-                cellArray[cellVirId]->part = false;
-            }
-            else{
-                cout << "Invalid initial partition(A)!" << endl;
-                cout << "lefted cells: " << ratio.size()-1-i << endl;
-                cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
-                cellArray[cellVirId]->part = true;
-                exit(1);
-            }
-        }else{
-            if(tryPutOn(cellLibId, false, 0)){
-                cellArray[cellVirId]->part = false;
-            }
-            else if(tryPutOn(cellLibId, true, 0)){
-                cellArray[cellVirId]->part = true;
-            }
-            else{
-                cout << "Invalid initial partition(B)!" << endl;
-                cout << "lefted cells: " << ratio.size()-1-i << endl;
-                cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
-                cellArray[cellVirId]->part = true;
-                exit(1);
-            }
-        }
-    } */
-
-    for (int cellVirId = 0; cellVirId < cellArray.size(); cellVirId++){
-        int cellLibId = cellArray[cellVirId]->lib;
-        int sizeOnA = techA[cellLibId];
-        int sizeOnB = techB[cellLibId];
+        long long sizeOnA = techA[cellLibId];
+        long long sizeOnB = techB[cellLibId];
         if (sizeOnA <= sizeOnB){ // can't delete this line  !!!
             if (tryPutOn(cellLibId, true, 0))
                 cellArray[cellVirId]->part = true;
             else if (tryPutOn(cellLibId, false, 0))
                 cellArray[cellVirId]->part = false;
             else{
-                cout << "Invalid initial partition!" << endl;
+                die.Aarea += techA[cellLibId];
                 cellArray[cellVirId]->part = true;
-                return false;
-                // exit(1);
+                valid = false;
             }
         }
         else{ // can't delete this line  !!!
@@ -383,24 +367,23 @@ int init_partition_1()
             else if (tryPutOn(cellLibId, true, 0))
                 cellArray[cellVirId]->part = true;
             else{
-                cout << "Invalid initial partition!" << endl;
+                die.Aarea += techA[cellLibId];
                 cellArray[cellVirId]->part = true;
-                return false;
-                // exit(1);
+                valid = false;
             }
         }
     }
-    // cout << "Util A: " << static_cast<double>(die.Aarea) / die.size <<", " << "Util B: " <<static_cast<double>(die.Barea)/ die.size << endl;
 
     if (TIME)
         printf("Initial partition Time = %f\n", ((double)(clock() - start)) / CLOCKS_PER_SEC);
     
-    return true;
+    if(!valid) cout << "Invalid initial partition!" << endl;
+    
+    return valid;
 }
 
 void init_distribution()
 {
-    // cout << "init_distribution()" << endl;
     cutsize = 0;
     for (auto n : netArray){
         int Ai = 0, Bi = 0;
@@ -640,12 +623,15 @@ void FM(){
 int main(int argc, char *argv[]){
     clock_t start = clock();
     auto [testcasePath, outputPath] = eatArg(argc, argv);
-
+    srand(1); // failed seed: 3, 4, 6, 10, 23
+    // srand(time(NULL));
     parser(testcasePath);
-    if(!init_partition_1()){
-        init_partition_2();
+
+    if(!init_partition()){
+        greedy_fix();
     }
 
+    // init_distribution();
     FM();
 
     output(outputPath);
